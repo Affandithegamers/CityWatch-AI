@@ -4,12 +4,65 @@ import shutil
 import uuid
 from datetime import datetime
 from typing import Optional, List
-
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import torch
 from ultralytics import YOLO
+
+# Paste your direct connection string from Supabase
+DATABASE_URL = "postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres"
+
+def get_db_connection():
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+
+def check_and_save_hazard_report(lat: float, lon: float, hazard_type: str, severity: str, notes: str, image_url: str):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Native PostGIS 10-meter deduplication using spatial indexing
+    # ST_DWithin calculates distance over spheroids using geography casts
+    query_dedup = """
+        SELECT id, report_code, duplicate_count
+        FROM hazard_reports
+        WHERE ST_DWithin(
+            geom::geography,
+            ST_SetSRID(ST_Point(%s, %s), 4326)::geography,
+            10.0
+        )
+        AND status != 'Resolved'
+        LIMIT 1;
+    """
+    cur.execute(query_dedup, (lon, lat))
+    match = cur.fetchone()
+
+    if match:
+        # Update existing report counter
+        cur.execute(
+            "UPDATE hazard_reports SET duplicate_count = duplicate_count + 1 WHERE id = %s RETURNING *;",
+            (match["id"],)
+        )
+        updated = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"is_duplicate": True, "ticket": updated}
+
+    # Insert brand-new record with PostGIS Point geometry
+    report_code = f"REP-{uuid.uuid4().hex[:6].upper()}"
+    insert_query = """
+        INSERT INTO hazard_reports (report_code, latitude, longitude, geom, hazard_type, severity, notes, image_url)
+        VALUES (%s, %s, %s, ST_SetSRID(ST_Point(%s, %s), 4326), %s, %s, %s, %s)
+        RETURNING *;
+    """
+    cur.execute(insert_query, (report_code, lat, lon, lon, lat, hazard_type, severity, notes, image_url))
+    new_ticket = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"is_duplicate": False, "ticket": new_ticket}
 
 # 1. Initialize FastAPI Application
 app = FastAPI(
