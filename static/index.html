@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CityWatch AI — Municipal Hazard Reporting</title>
-    <!-- Leaflet Map CSS -->
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -18,7 +18,7 @@
             overflow: hidden;
         }
         
-        /* Mobile Tab Switcher (Hidden on Desktop & Landscape) */
+        /* Mobile Top Navigation Tabs (Hidden on Desktop) */
         #mobileNav {
             display: none;
             width: 100%;
@@ -74,7 +74,7 @@
         button.btn-gps { width: 100%; padding: 10px; background: #0ea5e9; color: #ffffff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 8px; }
         button.btn-gps:hover { background: #0284c7; }
 
-        /* Notification Alert */
+        /* Notification Box */
         #resultAlert { display: none; margin-top: 16px; padding: 12px; border-radius: 6px; font-size: 13px; line-height: 1.4; }
         .alert-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
         .alert-duplicate { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
@@ -88,19 +88,17 @@
         .badge-Medium { background: #fef3c7; color: #b45309; }
         .badge-Low { background: #dcfce7; color: #15803d; }
 
-        /* ==================================================== */
-        /* RESPONSIVE STYLES FOR VERTICAL / MOBILE SCREENS      */
-        /* ==================================================== */
+        /* Responsive Mobile Styles */
         @media (max-width: 768px) and (orientation: portrait), (max-width: 600px) {
             body {
                 flex-direction: column;
-                padding-top: 48px; /* space for top tabs */
+                padding-top: 48px;
             }
             #mobileNav {
                 display: flex;
             }
             .sidebar-header {
-                display: none; /* saved space on mobile */
+                display: none;
             }
             #sidebar {
                 width: 100%;
@@ -110,9 +108,8 @@
             #map {
                 width: 100%;
                 height: 100%;
-                display: none; /* hidden until map tab is clicked */
+                display: none;
             }
-            /* When user switches to map view */
             body.show-map-view #sidebar {
                 display: none;
             }
@@ -124,13 +121,13 @@
 </head>
 <body>
 
-    <!-- Mobile Top Navigation Tabs -->
+    <!-- Mobile Navigation Tabs -->
     <div id="mobileNav">
         <button id="tabReport" class="tab-btn active" onclick="switchTab('report')">📝 Report Hazard</button>
         <button id="tabMap" class="tab-btn" onclick="switchTab('map')">🗺️ Live Map</button>
     </div>
 
-    <!-- Citizen Report Panel -->
+    <!-- Citizen Form -->
     <div id="sidebar">
         <div class="sidebar-header">
             <h1>🚧 CityWatch AI</h1>
@@ -146,7 +143,7 @@
                         <input type="text" id="latitude" placeholder="Latitude" required readonly>
                         <input type="text" id="longitude" placeholder="Longitude" required readonly>
                     </div>
-                    <small style="color: #64748b; font-size: 11px; margin-top: 4px; display: block;">Or switch to the map tab and tap anywhere to place a pin.</small>
+                    <small style="color: #64748b; font-size: 11px; margin-top: 4px; display: block;">Or switch to the map tab and tap to place a pin.</small>
                 </div>
 
                 <div class="form-group">
@@ -155,8 +152,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Description / Additional Remarks</label>
-                    <textarea id="notes" rows="3" placeholder="e.g. Deep road pothole near junction causing vehicle lane diversion"></textarea>
+                    <label>Description / Remarks</label>
+                    <textarea id="notes" rows="3" placeholder="e.g. Deep pothole on left lane near traffic light"></textarea>
                 </div>
 
                 <button type="submit" id="submitBtn" class="btn-primary">Submit to AI Verification</button>
@@ -166,10 +163,10 @@
         </div>
     </div>
 
-    <!-- Leaflet Interactive Map -->
+    <!-- Map Container -->
     <div id="map"></div>
 
-    <!-- Scripts -->
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // Initialize Map
@@ -180,7 +177,7 @@
 
         let activeClickMarker = null;
 
-        // Mobile Tab Switch Function
+        // Mobile Tab Switcher
         function switchTab(view) {
             const reportBtn = document.getElementById('tabReport');
             const mapBtn = document.getElementById('tabMap');
@@ -189,7 +186,6 @@
                 document.body.classList.add('show-map-view');
                 mapBtn.classList.add('active');
                 reportBtn.classList.remove('active');
-                // Refresh map size so Leaflet renders tiles properly
                 setTimeout(() => { map.invalidateSize(); }, 200);
             } else {
                 document.body.classList.remove('show-map-view');
@@ -198,7 +194,7 @@
             }
         }
 
-        // Auto-detect GPS coordinates
+        // GPS Auto-detection
         function fetchCurrentGPS() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(position => {
@@ -207,16 +203,15 @@
                     updateFormCoordinates(lat, lon);
                     map.setView([lat, lon], 16);
                     alert("📍 GPS coordinates captured successfully!");
-                }, () => alert("Unable to retrieve device GPS. Please grant browser location access."));
+                }, () => alert("Could not retrieve GPS. Please allow location permissions in your browser."));
             }
         }
 
-        // Tap on Map to select coordinates
+        // Pin Selection via Map Tap/Click
         map.on('click', function(e) {
             updateFormCoordinates(e.latlng.lat, e.latlng.lng);
-            // On mobile, ask user if they want to return to form
             if (window.innerWidth <= 768) {
-                if (confirm("📍 Location pinned on map! Return to the report form?")) {
+                if (confirm("📍 Location selected. Return to the report form?")) {
                     switchTab('report');
                 }
             }
@@ -227,10 +222,10 @@
             document.getElementById('longitude').value = lon.toFixed(6);
 
             if (activeClickMarker) map.removeLayer(activeClickMarker);
-            activeClickMarker = L.marker([lat, lon]).addTo(map).bindPopup("Selected Incident Point").openPopup();
+            activeClickMarker = L.marker([lat, lon]).addTo(map).bindPopup("Selected Point").openPopup();
         }
 
-        // Fetch and plot reports
+        // Fetch and display active hazard markers
         async function loadReportMarkers() {
             try {
                 const response = await fetch('/api/v1/reports');
@@ -254,18 +249,18 @@
                             <span class="badge badge-${ticket.severity}">${ticket.severity}</span>
                             <p style="margin: 6px 0; font-size: 13px;"><b>Defect:</b> ${ticket.hazard_type}</p>
                             <p style="margin: 4px 0; font-size: 12px; color: #475569;">${ticket.notes}</p>
-                            <p style="margin: 4px 0; font-size: 12px;"><b>Merged:</b> ${ticket.duplicate_count}</p>
+                            <p style="margin: 4px 0; font-size: 12px;"><b>Merged Reports:</b> ${ticket.duplicate_count}</p>
                             <img src="${ticket.image_url}" style="width: 100%; border-radius: 4px; margin-top: 6px; max-height: 110px; object-fit: cover;" />
                             <small style="color: #94a3b8; display: block; margin-top: 4px;">${ticket.submitted_at}</small>
                         </div>
                     `);
                 });
             } catch (err) {
-                console.error("Error loading spatial markers:", err);
+                console.error("Error loading markers:", err);
             }
         }
 
-        // Form Submit
+        // Form Submit Handler
         document.getElementById('reportForm').onsubmit = async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
@@ -281,40 +276,44 @@
             formData.append("notes", document.getElementById('notes').value);
             formData.append("image", document.getElementById('imageInput').files[0]);
 
-                            try {
-                    const res = await fetch('/api/v1/report', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    if (!res.ok) {
-                        const errJson = await res.json().catch(() => null);
-                        const errMsg = errJson ? errJson.detail : `Server returned status ${res.status}`;
-                        throw new Error(errMsg);
-                    }
+            try {
+                const res = await fetch('/api/v1/report', {
+                    method: 'POST',
+                    body: formData
+                });
 
-                    const result = await res.json();
-                    alertBox.style.display = "block";
-                    if (result.is_duplicate) {
-                        alertBox.className = "alert-duplicate";
-                        alertBox.innerHTML = `⚠️ <b>Duplicate Detected:</b> ${result.message}`;
-                    } else {
-                        alertBox.className = "alert-success";
-                        alertBox.innerHTML = `✅ <b>Ticket Created:</b> ${result.ticket.report_id} (${result.ticket.hazard_type} - ${result.ticket.severity})`;
-                    }
-                    loadReportMarkers();
-                } catch (err) {
-                    alertBox.style.display = "block";
-                    alertBox.className = "alert-duplicate";
-                    alertBox.innerText = "Error: " + err.message;
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => null);
+                    throw new Error(errData ? errData.detail : `Server error (${res.status})`);
                 }
-             finally {
+
+                const result = await res.json();
+                alertBox.style.display = "block";
+
+                if (result.is_duplicate) {
+                    alertBox.className = "alert-duplicate";
+                    alertBox.innerHTML = `⚠️ <b>Duplicate Merged (10m Radius):</b> Merged into parent ticket: <b>${result.ticket.parent_report_id}</b>`;
+                } else {
+                    alertBox.className = "alert-success";
+                    alertBox.innerHTML = `✅ <b>Success!</b> AI classified: <b>${result.ticket.hazard_type}</b> (${result.ticket.severity} Risk)`;
+                }
+
+                loadReportMarkers();
+
+                if (window.innerWidth <= 768) {
+                    setTimeout(() => { switchTab('map'); }, 1500);
+                }
+            } catch (err) {
+                alertBox.style.display = "block";
+                alertBox.className = "alert-duplicate";
+                alertBox.innerText = "Submission Error: " + err.message;
+            } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerText = "Submit to AI Verification";
             }
         };
 
-        // Load pins on boot
+        // Load existing pins on page load
         loadReportMarkers();
     </script>
 </body>
