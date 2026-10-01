@@ -5,6 +5,7 @@ import gc
 from datetime import datetime
 from typing import Optional, List
 from PIL import Image
+from ai_detector import run_yolo_inference
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
