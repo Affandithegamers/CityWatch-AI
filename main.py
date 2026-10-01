@@ -12,6 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import torch
 from ultralytics import YOLO
+model = YOLO("yolov8n.pt")
+model.train(data="road_hazards.yaml", epochs=30, imgsz=640, device=0)
 
 # 1. Initialize FastAPI Application
 app = FastAPI(
