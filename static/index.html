@@ -13,9 +13,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    /* ==========================================================================
-       THEME VARIABLES ENGINE
-       ========================================================================== */
+    /* Dynamic Theme Variables */
     :root, body[data-theme="blue"] {
       --bg-body: #f8fafc;
       --bg-card: #ffffff;
@@ -100,89 +98,32 @@
       --logo-bg: #2E6A47;
     }
 
-    /* Theme Dynamic Class Connectors */
     body {
       background-color: var(--bg-body);
       color: var(--text-main);
       transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    .theme-card {
-      background-color: var(--bg-card) !important;
-      border-color: var(--border-card) !important;
-    }
+    .theme-card { background-color: var(--bg-card) !important; border-color: var(--border-card) !important; }
+    .theme-input { background-color: var(--input-bg) !important; border-color: var(--input-border) !important; color: var(--text-main) !important; }
+    .theme-header { background-color: var(--header-bg) !important; border-color: var(--header-border) !important; }
+    .theme-nav-pill { background-color: var(--nav-pill-bg) !important; border-color: var(--nav-pill-border) !important; }
+    .theme-accent-btn { background-color: var(--accent) !important; color: var(--btn-text) !important; }
+    .theme-accent-btn:hover { background-color: var(--accent-hover) !important; }
+    .theme-soft-badge { background-color: var(--accent-soft) !important; border-color: var(--accent-soft-border) !important; color: var(--accent-soft-text) !important; }
+    .theme-logo { background-color: var(--logo-bg) !important; }
+    .theme-text-muted { color: var(--text-muted) !important; }
 
-    .theme-input {
-      background-color: var(--input-bg) !important;
-      border-color: var(--input-border) !important;
-      color: var(--text-main) !important;
-    }
-
-    .theme-header {
-      background-color: var(--header-bg) !important;
-      border-color: var(--header-border) !important;
-    }
-
-    .theme-nav-pill {
-      background-color: var(--nav-pill-bg) !important;
-      border-color: var(--nav-pill-border) !important;
-    }
-
-    .theme-accent-btn {
-      background-color: var(--accent) !important;
-      color: var(--btn-text) !important;
-    }
-
-    .theme-accent-btn:hover {
-      background-color: var(--accent-hover) !important;
-    }
-
-    .theme-soft-badge {
-      background-color: var(--accent-soft) !important;
-      border-color: var(--accent-soft-border) !important;
-      color: var(--accent-soft-text) !important;
-    }
-
-    .theme-logo {
-      background-color: var(--logo-bg) !important;
-    }
-
-    .theme-text-muted {
-      color: var(--text-muted) !important;
-    }
-
-    /* Popups and Animations */
-    .leaflet-popup-content-wrapper { 
-      border-radius: 14px; 
-      overflow: hidden; 
-      padding: 0; 
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15); 
-    }
+    .leaflet-popup-content-wrapper { border-radius: 14px; overflow: hidden; padding: 0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2); }
     .leaflet-popup-content { margin: 0; line-height: 1.4; }
 
-    @keyframes viewFadeSlide {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes viewFadeSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .view-transition { animation: viewFadeSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-    .view-transition {
-      animation: viewFadeSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
+    @keyframes modalPopIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .modal-enter { animation: modalPopIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-    @keyframes modalPopIn {
-      from { opacity: 0; transform: scale(0.95) translateY(10px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-
-    .modal-enter {
-      animation: modalPopIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-
-    .drag-active {
-      border-color: var(--accent) !important;
-      background-color: var(--accent-soft) !important;
-      transform: scale(1.01);
-    }
+    .drag-active { border-color: var(--accent) !important; background-color: var(--accent-soft) !important; transform: scale(1.01); }
   </style>
 </head>
 <body data-theme="blue" class="flex flex-col min-h-screen font-sans antialiased selection:bg-slate-700 selection:text-white">
@@ -191,7 +132,7 @@
   <header class="theme-header text-white shadow-md sticky top-0 z-50 transition-colors duration-300 border-b">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
       
-      <!-- Brand Logo with Cute Tilt Hover -->
+      <!-- Brand Logo with Tilt Micro-interaction -->
       <div class="flex items-center space-x-3 cursor-pointer group" onclick="switchView('report')">
         <div id="cwLogoBadge" class="theme-logo w-8 h-8 rounded-lg group-hover:rotate-3 flex items-center justify-center font-black text-white text-base shadow-sm transition-all duration-300">
           CW
@@ -218,25 +159,18 @@
         </button>
       </nav>
 
-      <!-- User Profile & Theme Setting Widgets -->
+      <!-- Profile & Settings Widgets -->
       <div class="flex items-center space-x-2">
-        
-        <!-- Theme Settings Button -->
         <button onclick="openSettingsModal()" class="theme-nav-pill text-xs border hover:opacity-90 active:scale-95 px-2.5 py-1.5 rounded-lg text-slate-200 shadow-sm transition-all duration-200 cursor-pointer flex items-center space-x-1.5" title="Appearance Settings">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-          </svg>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           <span class="hidden sm:inline">Theme</span>
         </button>
 
-        <!-- User Badge -->
         <div id="userBadge" class="theme-nav-pill border px-3 py-1.5 rounded-lg text-xs flex items-center space-x-2 shadow-sm">
           <span id="userDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span id="userNameDisplay" class="font-medium text-slate-200">Guest Citizen</span>
         </div>
 
-        <!-- Auth Button (Sign In / Red Sign Out) -->
         <button onclick="openAuthModal()" id="authActionBtn" class="theme-accent-btn text-xs active:scale-95 font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition-all duration-200 cursor-pointer">
           Sign In / Register
         </button>
@@ -248,7 +182,6 @@
   <!-- THEME SETTINGS MODAL -->
   <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
     <div id="settingsModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 transition-all duration-300">
-      
       <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
         <div>
           <h3 class="text-base font-bold text-slate-900">Appearance & Theme</h3>
@@ -257,10 +190,7 @@
         <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold px-2">&times;</button>
       </div>
 
-      <!-- Theme Selector Grid -->
       <div class="grid grid-cols-1 gap-2.5">
-        
-        <!-- Theme 1: Blue / Slate (Original) -->
         <div onclick="setTheme('blue')" id="theme-card-blue" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-blue-500 cursor-pointer transition-all duration-200">
           <div class="flex items-center space-x-3">
             <div class="flex -space-x-1">
@@ -270,13 +200,12 @@
             </div>
             <div>
               <p class="text-xs font-bold text-slate-800">Civic Blue (Original)</p>
-              <p class="text-[11px] text-slate-400">Classic smart city & municipal authority</p>
+              <p class="text-[11px] text-slate-400">Classic municipal infrastructure palette</p>
             </div>
           </div>
           <span id="check-blue" class="text-xs font-bold text-blue-600">✓ Active</span>
         </div>
 
-        <!-- Theme 2: Coffee & Vanilla -->
         <div onclick="setTheme('coffee')" id="theme-card-coffee" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#8A5A36] cursor-pointer transition-all duration-200">
           <div class="flex items-center space-x-3">
             <div class="flex -space-x-1">
@@ -292,7 +221,6 @@
           <span id="check-coffee" class="hidden text-xs font-bold text-[#8A5A36]">✓ Active</span>
         </div>
 
-        <!-- Theme 3: Charcoal on Sand -->
         <div onclick="setTheme('charcoal')" id="theme-card-charcoal" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#44403C] cursor-pointer transition-all duration-200">
           <div class="flex items-center space-x-3">
             <div class="flex -space-x-1">
@@ -301,14 +229,13 @@
               <span class="w-6 h-6 rounded-full bg-[#F4EFEB] border-2 border-white shadow-xs"></span>
             </div>
             <div>
-              <p class="text-xs font-bold text-slate-800">Charcoal on Sand / Cream</p>
+              <p class="text-xs font-bold text-slate-800">Charcoal on Sand</p>
               <p class="text-[11px] text-slate-400">Natural stone, linen paper & dark charcoal</p>
             </div>
           </div>
           <span id="check-charcoal" class="hidden text-xs font-bold text-[#44403C]">✓ Active</span>
         </div>
 
-        <!-- Theme 4: Sage & Forest Green -->
         <div onclick="setTheme('sage')" id="theme-card-sage" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#2E6A47] cursor-pointer transition-all duration-200">
           <div class="flex items-center space-x-3">
             <div class="flex -space-x-1">
@@ -318,37 +245,52 @@
             </div>
             <div>
               <p class="text-xs font-bold text-slate-800">Sage & Forest Green</p>
-              <p class="text-[11px] text-slate-400">Soft mist, eucalyptus & deep forest pine</p>
+              <p class="text-[11px] text-slate-400">Calming eucalyptus & deep forest pine</p>
             </div>
           </div>
           <span id="check-sage" class="hidden text-xs font-bold text-[#2E6A47]">✓ Active</span>
         </div>
-
       </div>
 
       <div class="mt-5 pt-3 border-t border-slate-100 flex justify-end">
-        <button onclick="closeSettingsModal()" class="theme-accent-btn text-xs font-semibold px-4 py-2 rounded-xl transition-all duration-200">
-          Done
-        </button>
+        <button onclick="closeSettingsModal()" class="theme-accent-btn text-xs font-semibold px-4 py-2 rounded-xl transition-all duration-200">Done</button>
       </div>
     </div>
   </div>
 
-  <!-- AUTHENTICATION MODAL (WITH PASSWORD TOGGLE) -->
+  <!-- RESOLUTION PROOF MODAL (CONTRACTOR DISPATCH) -->
+  <div id="resolveModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
+    <div id="resolveModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 transition-all duration-300">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Upload "After Repair" Proof</h3>
+          <p class="text-xs text-slate-500" id="resolveTicketLabel">Attaching photo for work order verification.</p>
+        </div>
+        <button onclick="closeResolveModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold px-2">&times;</button>
+      </div>
+
+      <form id="resolveForm" class="space-y-4" onsubmit="submitResolution(event)">
+        <input type="hidden" id="resolveReportId" />
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Contractor Finished Photograph</label>
+          <input type="file" id="resolveImageInput" accept="image/*" required class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer" />
+        </div>
+        <button type="submit" id="resolveSubmitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">
+          Verify & Mark Ticket Resolved
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- AUTHENTICATION MODAL -->
   <div id="authModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
     <div id="authModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 transition-all duration-300">
-      
       <div class="flex border-b border-slate-200 mb-5">
-        <button id="tabLoginBtn" onclick="switchAuthTab('login')" class="flex-1 py-2.5 text-xs font-bold border-b-2 border-blue-600 text-blue-600 transition-all duration-200">
-          Sign In
-        </button>
-        <button id="tabRegisterBtn" onclick="switchAuthTab('register')" class="flex-1 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-all duration-200">
-          Create Account
-        </button>
+        <button id="tabLoginBtn" onclick="switchAuthTab('login')" class="flex-1 py-2.5 text-xs font-bold border-b-2 border-blue-600 text-blue-600 transition-all duration-200">Sign In</button>
+        <button id="tabRegisterBtn" onclick="switchAuthTab('register')" class="flex-1 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-all duration-200">Create Account</button>
         <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-700 text-lg px-2 transition-colors duration-150">&times;</button>
       </div>
 
-      <!-- FORM 1: LOGIN -->
       <form id="loginForm" class="space-y-4" onsubmit="handleLogin(event)">
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
@@ -358,20 +300,14 @@
           <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
           <div class="relative">
             <input type="password" id="loginPassword" required class="w-full text-xs p-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 transition-all duration-200" placeholder="••••••••" />
-            <button type="button" onclick="togglePasswordVisibility('loginPassword', 'eyeIconLogin')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer" aria-label="Toggle password visibility">
-              <svg id="eyeIconLogin" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-              </svg>
+            <button type="button" onclick="togglePasswordVisibility('loginPassword', 'eyeIconLogin')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer">
+              <svg id="eyeIconLogin" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             </button>
           </div>
         </div>
-        <button type="submit" class="w-full theme-accent-btn active:scale-[0.98] font-semibold py-2.5 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">
-          Sign In
-        </button>
+        <button type="submit" class="w-full theme-accent-btn active:scale-[0.98] font-semibold py-2.5 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">Sign In</button>
       </form>
 
-      <!-- FORM 2: CREATE NEW ACCOUNT (REGISTER) -->
       <form id="registerForm" class="hidden space-y-3" onsubmit="handleRegister(event)">
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Full Name</label>
@@ -385,11 +321,8 @@
           <label class="block text-xs font-semibold text-slate-700 mb-1">Create Password</label>
           <div class="relative">
             <input type="password" id="regPassword" required class="w-full text-xs p-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 transition-all duration-200" placeholder="••••••••" />
-            <button type="button" onclick="togglePasswordVisibility('regPassword', 'eyeIconReg')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer" aria-label="Toggle password visibility">
-              <svg id="eyeIconReg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-              </svg>
+            <button type="button" onclick="togglePasswordVisibility('regPassword', 'eyeIconReg')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer">
+              <svg id="eyeIconReg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             </button>
           </div>
         </div>
@@ -400,9 +333,7 @@
             <option value="admin">Municipal Authority (DBKL / Contractor Ops)</option>
           </select>
         </div>
-        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-semibold py-2.5 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">
-          Register to Database
-        </button>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-semibold py-2.5 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">Register to Database</button>
       </form>
 
       <div id="authErrorBanner" class="hidden mt-3 p-2.5 rounded-lg text-xs bg-rose-50 text-rose-700 border border-rose-200 text-center view-transition"></div>
@@ -435,44 +366,44 @@
             </select>
           </div>
 
-          <!-- GPS Location Coordinates -->
+          <!-- Non-Intimidating GPS Location Inputs -->
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider mb-1">GPS Location</label>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-xs font-semibold uppercase tracking-wider">GPS Telemetry</label>
+              <span class="text-[10px] text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Auto-Locked</span>
+            </div>
             <button type="button" onclick="detectUserLocation()" class="theme-soft-badge w-full mb-2 active:scale-[0.98] border py-2 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all duration-200 cursor-pointer shadow-xs">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-              <span>Auto-Detect Current GPS</span>
+              <span>Calibrate Current GPS</span>
             </button>
             <div class="grid grid-cols-2 gap-2">
-              <input type="number" step="any" id="latInput" placeholder="Latitude" required class="theme-input w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 transition-all duration-200" />
-              <input type="number" step="any" id="lngInput" placeholder="Longitude" required class="theme-input w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 transition-all duration-200" />
+              <div class="relative">
+                <input type="number" step="any" id="latInput" placeholder="Latitude" readonly required class="theme-input w-full text-xs p-2.5 pr-7 border rounded-lg bg-slate-50/70 font-mono text-slate-500 cursor-default" />
+                <span class="absolute right-2.5 top-2.5 text-slate-400 text-[10px]" title="Auto-filled via GPS">🔒</span>
+              </div>
+              <div class="relative">
+                <input type="number" step="any" id="lngInput" placeholder="Longitude" readonly required class="theme-input w-full text-xs p-2.5 pr-7 border rounded-lg bg-slate-50/70 font-mono text-slate-500 cursor-default" />
+                <span class="absolute right-2.5 top-2.5 text-slate-400 text-[10px]" title="Auto-filled via GPS">🔒</span>
+              </div>
             </div>
-            <p class="theme-text-muted text-[11px] mt-1">Or click anywhere on the map to pin.</p>
+            <p class="theme-text-muted text-[11px] mt-1">Tap the map to reposition pin coordinates.</p>
           </div>
 
           <!-- Drag & Drop Photo Upload -->
           <div>
             <label class="block text-xs font-semibold uppercase tracking-wider mb-1">Incident Photograph</label>
-            
-            <div 
-              id="dropZone" 
-              onclick="document.getElementById('imageInput').click()" 
-              class="theme-input relative border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[130px] group shadow-inner"
-            >
+            <div id="dropZone" onclick="document.getElementById('imageInput').click()" class="theme-input relative border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[130px] group shadow-inner">
               <input type="file" id="imageInput" accept="image/*" required class="hidden" />
 
               <div id="dropPrompt" class="flex flex-col items-center transition-all duration-200">
-                <svg class="w-8 h-8 opacity-60 group-hover:scale-110 mb-1.5 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
+                <svg class="w-8 h-8 opacity-60 group-hover:scale-110 mb-1.5 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 <p class="text-xs font-semibold transition-colors duration-200">Click to browse or drag & drop photo</p>
                 <p class="theme-text-muted text-[11px] mt-0.5">JPG, PNG, or WEBP up to 10MB</p>
               </div>
 
               <div id="imagePreviewContainer" class="hidden w-full h-36 relative rounded-xl overflow-hidden border transition-all duration-300">
                 <img id="imagePreview" src="" alt="Incident Preview" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
-                <span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-md backdrop-blur-sm">
-                  Click / Drop to Change
-                </span>
+                <span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-md backdrop-blur-sm">Click / Drop to Change</span>
               </div>
             </div>
           </div>
@@ -494,19 +425,16 @@
       <!-- Interactive Map Window -->
       <div class="theme-card lg:col-span-8 p-2 rounded-2xl shadow-sm hover:shadow-md border relative min-h-[460px] flex flex-col transition-all duration-300">
         <div class="flex flex-wrap justify-between items-center px-3 py-2 border-b gap-2">
-          
           <div class="flex items-center space-x-2">
             <span class="font-bold text-xs uppercase tracking-wider">Live Spatial Map</span>
             <span id="mapReportCountBadge" class="theme-soft-badge text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all duration-300">0 Reports</span>
           </div>
 
-          <!-- Severity Legend -->
           <div class="theme-text-muted flex items-center space-x-3 text-[11px]">
             <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-rose-500 mr-1.5"></span>Critical</span>
             <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>Medium</span>
-            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>Low</span>
+            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>Resolved</span>
           </div>
-
         </div>
 
         <div id="map" class="w-full flex-1 rounded-xl z-0 transition-opacity duration-300" style="min-height: 440px;"></div>
@@ -541,8 +469,6 @@
 
     <!-- VIEW 4: MUNICIPAL ADMIN COMMAND PORTAL -->
     <div id="view-admin" class="hidden space-y-6">
-      
-      <!-- Live KPI Cards -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="theme-card p-4 rounded-xl border shadow-sm hover:shadow transition-all duration-200">
           <p class="theme-text-muted text-[11px] font-semibold uppercase tracking-wider">Total Open Tickets</p>
@@ -553,7 +479,7 @@
           <p id="kpiCritical" class="text-2xl font-black text-rose-600 mt-1">0</p>
         </div>
         <div class="theme-card p-4 rounded-xl border shadow-sm hover:shadow transition-all duration-200">
-          <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-500">10m Duplicates Merged</p>
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-500">10m Duplicates & Upvotes</p>
           <p id="kpiDuplicates" class="text-2xl font-black text-blue-600 mt-1">0</p>
         </div>
         <div class="theme-card p-4 rounded-xl border shadow-sm hover:shadow transition-all duration-200">
@@ -562,12 +488,11 @@
         </div>
       </div>
 
-      <!-- Incident Operations Table -->
       <div class="theme-card rounded-2xl shadow-sm hover:shadow-md border overflow-hidden transition-all duration-300">
         <div class="p-4 border-b flex justify-between items-center opacity-95">
           <div>
             <h3 class="text-sm font-bold">Contractor Dispatch Operations</h3>
-            <p class="theme-text-muted text-xs">Authorized status modifications (DBKL / JKR road engineers).</p>
+            <p class="theme-text-muted text-xs">Verify resolutions and manage work orders.</p>
           </div>
           <button onclick="loadAdminReports()" class="theme-soft-badge border text-xs active:scale-95 px-3 py-1.5 rounded-lg font-medium transition-all duration-200 cursor-pointer shadow-xs">Refresh</button>
         </div>
@@ -579,16 +504,15 @@
                 <th class="py-3 px-4">Reported By</th>
                 <th class="py-3 px-4">Hazard Category</th>
                 <th class="py-3 px-4">Severity</th>
-                <th class="py-3 px-4">Duplicates</th>
+                <th class="py-3 px-4">Upvotes</th>
                 <th class="py-3 px-4">Status</th>
-                <th class="py-3 px-4 text-right">Update Status</th>
+                <th class="py-3 px-4 text-right">Dispatch Action</th>
               </tr>
             </thead>
             <tbody id="adminTableBody" class="divide-y opacity-90"></tbody>
           </table>
         </div>
       </div>
-
     </div>
 
   </main>
@@ -599,20 +523,18 @@
     let map, splitMapMarker, activeReports = [];
     let markersLayer = L.layerGroup();
 
-    // DOM Elements for Drag & Drop
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('imageInput');
     const previewContainer = document.getElementById('imagePreviewContainer');
     const dropPrompt = document.getElementById('dropPrompt');
     const imagePreview = document.getElementById('imagePreview');
 
-    // THEME ENGINE
+    // Theme Engine
     function setTheme(themeName) {
       currentTheme = themeName;
       document.body.setAttribute('data-theme', themeName);
       localStorage.setItem('cw_theme', themeName);
 
-      // Update checks and card borders in settings modal
       ['blue', 'coffee', 'charcoal', 'sage'].forEach(t => {
         const card = document.getElementById(`theme-card-${t}`);
         const check = document.getElementById(`check-${t}`);
@@ -633,37 +555,31 @@
 
     function openSettingsModal() {
       const modal = document.getElementById('settingsModal');
-      const card = document.getElementById('settingsModalCard');
       modal.classList.remove('hidden');
-      card.classList.add('modal-enter');
+      document.getElementById('settingsModalCard').classList.add('modal-enter');
     }
 
     function closeSettingsModal() {
       document.getElementById('settingsModal').classList.add('hidden');
-      document.getElementById('settingsModalCard').classList.remove('modal-enter');
     }
 
-    // PASSWORD VISIBILITY TOGGLE
+    // Password Toggle
     function togglePasswordVisibility(inputId, iconId) {
       const input = document.getElementById(inputId);
       const icon = document.getElementById(iconId);
 
       if (input.type === 'password') {
         input.type = 'text';
-        icon.innerHTML = `
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/>
-        `;
+        icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/>`;
       } else {
         input.type = 'password';
-        icon.innerHTML = `
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-        `;
+        icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>`;
       }
     }
 
-    // LEAFLET MAP
+    // Leaflet Map Initialization with Auto-Focus Focus
     function initMap() {
+      // Default to Kuala Lumpur urban center at zoom level 12
       map = L.map('map').setView([3.1390, 101.6869], 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -700,7 +616,7 @@
       }
     }
 
-    // DRAG & DROP PHOTO UPLOAD
+    // Drag & Drop Handlers
     function showFilePreview(file) {
       if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
@@ -714,37 +630,32 @@
     }
 
     fileInput.addEventListener('change', function(e) {
-      if (e.target.files.length > 0) {
-        showFilePreview(e.target.files[0]);
-      }
+      if (e.target.files.length > 0) showFilePreview(e.target.files[0]);
     });
 
-    ['dragenter', 'dragover'].forEach(eventName => {
-      dropZone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+    ['dragenter', 'dragover'].forEach(name => {
+      dropZone.addEventListener(name, (e) => {
+        e.preventDefault(); e.stopPropagation();
         dropZone.classList.add('drag-active');
       });
     });
 
-    ['dragleave', 'drop'].forEach(eventName => {
-      dropZone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+    ['dragleave', 'drop'].forEach(name => {
+      dropZone.addEventListener(name, (e) => {
+        e.preventDefault(); e.stopPropagation();
         dropZone.classList.remove('drag-active');
       });
     });
 
     dropZone.addEventListener('drop', (e) => {
-      const dt = e.dataTransfer;
-      const files = dt.files;
+      const files = e.dataTransfer.files;
       if (files.length > 0) {
         fileInput.files = files;
         showFilePreview(files[0]);
       }
     });
 
-    // VIEW SWITCHING (SPA)
+    // View Switching
     function switchView(viewName) {
       if (viewName === 'admin' && (!currentUser || currentUser.role !== 'admin')) {
         alert("Restricted: Municipal Authority account required. Sign in or register as an Admin.");
@@ -752,12 +663,10 @@
         return;
       }
 
-      const views = ['report', 'myreports', 'track', 'admin'];
-      views.forEach(v => {
+      ['report', 'myreports', 'track', 'admin'].forEach(v => {
         const el = document.getElementById(`view-${v}`);
         el.classList.add('hidden');
         el.classList.remove('view-transition');
-
         const navBtn = document.getElementById(`nav-${v}`);
         navBtn.classList.remove('theme-accent-btn', 'text-white', 'shadow-sm');
         navBtn.classList.add('text-slate-300');
@@ -765,8 +674,7 @@
 
       const targetEl = document.getElementById(`view-${viewName}`);
       targetEl.classList.remove('hidden');
-      
-      void targetEl.offsetWidth; // trigger transition reflow
+      void targetEl.offsetWidth;
       targetEl.classList.add('view-transition');
 
       const activeNav = document.getElementById(`nav-${viewName}`);
@@ -781,18 +689,15 @@
       }
     }
 
-    // AUTHENTICATION & SESSION PERSISTENCE
+    // Modal Operations
     function openAuthModal() {
-      const modal = document.getElementById('authModal');
-      const card = document.getElementById('authModalCard');
-      modal.classList.remove('hidden');
-      card.classList.add('modal-enter');
+      document.getElementById('authModal').classList.remove('hidden');
+      document.getElementById('authModalCard').classList.add('modal-enter');
       document.getElementById('authErrorBanner').classList.add('hidden');
     }
 
     function closeAuthModal() {
       document.getElementById('authModal').classList.add('hidden');
-      document.getElementById('authModalCard').classList.remove('modal-enter');
     }
 
     function switchAuthTab(tab) {
@@ -861,14 +766,12 @@
 
     function setUserSession(user) {
       currentUser = user;
-      
       if (user) {
         localStorage.setItem('cw_user', JSON.stringify(user));
         document.getElementById('userNameDisplay').textContent = `${user.full_name} (${user.role.toUpperCase()})`;
         
         const authBtn = document.getElementById('authActionBtn');
         authBtn.textContent = "Sign Out";
-        // Distinct Red button when logged in
         authBtn.className = "text-xs bg-rose-600 hover:bg-rose-700 active:scale-95 font-semibold px-3.5 py-1.5 rounded-lg text-white shadow-sm transition-all duration-200 cursor-pointer";
         
         authBtn.onclick = () => {
@@ -885,7 +788,64 @@
       }
     }
 
-    // INCIDENT REPORTING & PIPELINE
+    // Community Upvoting Function
+    async function upvoteTicket(reportId) {
+      try {
+        const res = await fetch(`/api/v1/report/${reportId}/upvote`, { method: 'POST' });
+        const json = await res.json();
+        if (json.success) {
+          loadReports();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Resolution Modal Handlers
+    function promptResolution(reportId) {
+      document.getElementById('resolveReportId').value = reportId;
+      document.getElementById('resolveTicketLabel').textContent = `Attaching completion proof for #${reportId}`;
+      document.getElementById('resolveModal').classList.remove('hidden');
+      document.getElementById('resolveModalCard').classList.add('modal-enter');
+    }
+
+    function closeResolveModal() {
+      document.getElementById('resolveModal').classList.add('hidden');
+      document.getElementById('resolveForm').reset();
+    }
+
+    async function submitResolution(e) {
+      e.preventDefault();
+      const reportId = document.getElementById('resolveReportId').value;
+      const file = document.getElementById('resolveImageInput').files[0];
+      const btn = document.getElementById('resolveSubmitBtn');
+
+      btn.disabled = true;
+      btn.textContent = "Uploading Verification...";
+
+      const formData = new FormData();
+      formData.append("after_image", file);
+
+      try {
+        const res = await fetch(`/api/v1/report/${reportId}/resolve?role=${currentUser.role}`, {
+          method: 'POST',
+          body: formData
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.detail || "Failed to resolve ticket.");
+        closeResolveModal();
+        loadAdminReports();
+        loadAdminStats();
+        loadReports();
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Verify & Mark Ticket Resolved";
+      }
+    }
+
+    // Load Reports, Fit Camera, & Render "Before & After" Popups
     async function loadReports() {
       try {
         const res = await fetch('/api/v1/reports');
@@ -897,29 +857,66 @@
         markersLayer.clearLayers();
 
         activeReports.forEach(r => {
-          let markerColor = "#10b981";
-          if (r.severity === "Critical") markerColor = "#ef4444";
-          else if (r.severity === "Medium") markerColor = "#f59e0b";
+          let markerColor = "#10b981"; // Emerald
+          if (r.status !== "Resolved") {
+            if (r.severity === "Critical") markerColor = "#ef4444";
+            else if (r.severity === "Medium") markerColor = "#f59e0b";
+          }
 
           const circle = L.circleMarker([r.latitude, r.longitude], {
-            radius: 8, fillColor: markerColor, color: "#ffffff", weight: 2, fillOpacity: 0.9
+            radius: 8, fillColor: markerColor, color: "#ffffff", weight: 2, fillOpacity: 0.95
           });
+
+          // Side-by-side Before & After comparison if Resolved
+          let mediaHtml = `<img src="${r.image_url}" class="w-full h-32 object-cover" />`;
+          if (r.status === "Resolved" && r.resolved_image_url) {
+            mediaHtml = `
+              <div class="grid grid-cols-2 gap-0.5 bg-slate-900">
+                <div class="relative">
+                  <img src="${r.image_url}" class="w-full h-28 object-cover" />
+                  <span class="absolute bottom-1 left-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">Before</span>
+                </div>
+                <div class="relative">
+                  <img src="${r.resolved_image_url}" class="w-full h-28 object-cover" />
+                  <span class="absolute bottom-1 left-1 bg-emerald-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">Fixed ✓</span>
+                </div>
+              </div>
+            `;
+          }
+
+          // Community Upvote Button vs Resolved Badge
+          let actionHtml = '';
+          if (r.status !== "Resolved") {
+            actionHtml = `
+              <button onclick="upvoteTicket('${r.report_id}')" class="w-full mt-2.5 bg-amber-50 hover:bg-amber-100 active:scale-[0.98] text-amber-900 border border-amber-200 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition cursor-pointer">
+                <span>👍 I see this too!</span>
+                <span class="bg-amber-200 text-amber-900 font-bold px-1.5 py-0.2 rounded-full text-[10px]">+${r.upvote_count || 0}</span>
+              </button>
+            `;
+          } else {
+            actionHtml = `
+              <div class="mt-2 p-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-[11px] font-semibold text-center flex items-center justify-center space-x-1">
+                <span>✓</span><span>Contractor Repaired & Verified</span>
+              </div>
+            `;
+          }
 
           circle.bindPopup(`
             <div class="w-64 font-sans text-xs">
-              <img src="${r.image_url}" class="w-full h-32 object-cover" />
-              <div class="p-3">
+              ${mediaHtml}
+              <div class="p-3 bg-white">
                 <div class="flex justify-between items-center mb-1">
                   <span class="font-bold text-slate-900">${r.report_id}</span>
                   <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-                    r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
-                  }">${r.severity}</span>
+                    r.status === 'Resolved' ? 'bg-emerald-100 text-emerald-800' : (r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800')
+                  }">${r.status === 'Resolved' ? 'Resolved' : r.severity}</span>
                 </div>
                 <p class="font-semibold text-slate-800">${r.hazard_type}</p>
                 <p class="text-slate-500 text-[11px] mt-1">${r.notes}</p>
+                ${actionHtml}
                 <div class="mt-2 pt-2 border-t border-slate-100 flex justify-between text-[10px] text-slate-400">
                   <span>Status: <b>${r.status}</b></span>
-                  <span>Duplicates: <b>${r.duplicate_count}</b></span>
+                  <span>Endorsements: <b>${(r.upvote_count || 0) + (r.duplicate_count || 1) - 1}</b></span>
                 </div>
               </div>
             </div>
@@ -928,9 +925,16 @@
           markersLayer.addLayer(circle);
         });
 
+        // Auto-frame map boundaries around reported incidents
+        if (activeReports.length > 0) {
+          const validCoords = activeReports.map(r => [r.latitude, r.longitude]);
+          map.fitBounds(L.latLngBounds(validCoords), { padding: [40, 40], maxZoom: 14 });
+        }
+
       } catch (e) { console.error(e); }
     }
 
+    // Submit Report
     document.getElementById('incidentForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const submitBtn = document.getElementById('submitBtn');
@@ -969,8 +973,7 @@
       }
     });
 
-
-    // CITIZEN HISTORY & TRACKER
+    // History and Tracking
     async function loadMyReports() {
       const email = currentUser ? currentUser.email : "anonymous@citizen.my";
       document.getElementById('myReportsSubtitle').textContent = `Showing incident history for ${email}`;
@@ -994,14 +997,17 @@
                 <div class="flex items-center space-x-2">
                   <span class="font-bold text-xs font-mono">${r.report_id}</span>
                   <span class="px-2 py-0.2 rounded text-[10px] font-bold ${
-                    r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
-                  }">${r.severity}</span>
+                    r.status === 'Resolved' ? 'bg-emerald-100 text-emerald-800' : (r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800')
+                  }">${r.status === 'Resolved' ? 'Resolved' : r.severity}</span>
                 </div>
                 <p class="text-xs font-medium">${r.hazard_type}</p>
                 <p class="theme-text-muted text-[11px]">${r.submitted_at}</p>
               </div>
             </div>
-            <span class="theme-soft-badge text-xs font-bold px-3 py-1 rounded-lg border">${r.status}</span>
+            <div class="text-right">
+              <span class="theme-soft-badge text-xs font-bold px-3 py-1 rounded-lg border block mb-1">${r.status}</span>
+              <span class="text-[10px] text-slate-400">👍 ${r.upvote_count || 0} Upvotes</span>
+            </div>
           </div>
         `;
       });
@@ -1019,6 +1025,16 @@
         const steps = ['Submitted', 'AI Verified', 'Dispatched', 'Resolved'];
         const currentIdx = steps.indexOf(t.status) !== -1 ? steps.indexOf(t.status) : 1;
 
+        let trackingMedia = `<img src="${t.image_url}" class="w-14 h-14 rounded-lg object-cover border shadow-inner" />`;
+        if (t.status === "Resolved" && t.resolved_image_url) {
+          trackingMedia = `
+            <div class="flex space-x-1">
+              <img src="${t.image_url}" title="Before" class="w-12 h-12 rounded-lg object-cover border" />
+              <img src="${t.resolved_image_url}" title="After" class="w-12 h-12 rounded-lg object-cover border border-emerald-500" />
+            </div>
+          `;
+        }
+
         container.classList.remove('hidden');
         container.className = "space-y-4 pt-4 border-t view-transition";
         container.innerHTML = `
@@ -1027,8 +1043,9 @@
               <span class="theme-text-muted text-[11px] font-mono">TICKET #${t.report_id}</span>
               <h3 class="text-sm font-bold">${t.hazard_type}</h3>
               <p class="theme-text-muted text-xs">${t.notes}</p>
+              <p class="text-[11px] text-amber-600 font-semibold mt-1">👍 Endorsed by ${t.upvote_count || 0} residents</p>
             </div>
-            <img src="${t.image_url}" class="w-14 h-14 rounded-lg object-cover border shadow-inner" />
+            ${trackingMedia}
           </div>
           <div class="grid grid-cols-4 gap-2 pt-2">
             ${steps.map((s, idx) => `
@@ -1046,7 +1063,7 @@
       }
     }
 
-    // MUNICIPAL OPS / CONTRACTOR DISPATCH
+    // Admin Command Portal
     async function loadAdminStats() {
       const res = await fetch('/api/v1/stats');
       const s = await res.json();
@@ -1070,17 +1087,24 @@
           <td class="theme-text-muted py-3 px-4 font-mono text-[11px]">${r.reported_by}</td>
           <td class="py-3 px-4 font-medium">${r.hazard_type}</td>
           <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-            r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
-          }">${r.severity}</span></td>
-          <td class="py-3 px-4 font-semibold text-blue-600">${r.duplicate_count}</td>
+            r.status === 'Resolved' ? 'bg-emerald-100 text-emerald-800' : (r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800')
+          }">${r.status === 'Resolved' ? 'Resolved' : r.severity}</span></td>
+          <td class="py-3 px-4 font-semibold text-amber-600">👍 ${r.upvote_count || 0}</td>
           <td class="py-3 px-4 font-semibold">${r.status}</td>
           <td class="py-3 px-4 text-right">
-            <select onchange="updateTicketStatus('${r.report_id}', this.value)" class="theme-input text-xs border rounded p-1 cursor-pointer transition-all duration-200">
-              <option value="" disabled selected>Update...</option>
-              <option value="AI Verified">AI Verified</option>
-              <option value="Dispatched">Dispatched</option>
-              <option value="Resolved">Resolved</option>
-            </select>
+            ${r.status === 'Resolved' ? 
+              `<span class="text-emerald-600 font-bold text-xs">✓ Verified</span>` :
+              `<div class="flex items-center justify-end space-x-1.5">
+                <select onchange="updateTicketStatus('${r.report_id}', this.value)" class="theme-input text-xs border rounded p-1 cursor-pointer">
+                  <option value="" disabled selected>Dispatch...</option>
+                  <option value="AI Verified">AI Verified</option>
+                  <option value="Dispatched">Dispatched</option>
+                </select>
+                <button onclick="promptResolution('${r.report_id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] px-2.5 py-1 rounded font-semibold transition active:scale-95 cursor-pointer shadow-xs">
+                  Resolve Proof
+                </button>
+              </div>`
+            }
           </td>
         `;
         tbody.appendChild(tr);
@@ -1097,7 +1121,6 @@
       loadReports();
     }
 
-    // WINDOW INITIALIZATION
     window.onload = () => {
       initTheme();
 

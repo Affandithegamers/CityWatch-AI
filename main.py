@@ -1,7 +1,7 @@
+# main.py
 import os
 import math
 import uuid
-import gc
 from datetime import datetime
 from typing import Optional
 from PIL import Image
@@ -10,21 +10,18 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-import torch
-from ultralytics import YOLO
 
 from database import (
     init_db, register_user, authenticate_user, insert_report,
     get_all_reports, get_report_by_id, update_report_status,
-    increment_duplicate, get_database_stats
+    upvote_report, resolve_report_with_image, increment_duplicate, get_database_stats
 )
-
 from ai_detector import run_yolo_multi_hazard_triage
 
 app = FastAPI(
     title="CityWatch AI",
     description="Intelligent Municipal Multi-Hazard Triage & Spatial Deduplication Platform",
-    version="2.5.0"
+    version="2.7.0"
 )
 
 app.add_middleware(
@@ -41,16 +38,8 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(STATIC_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-# Initialize SQLite tables on startup
+# Initialize database and migrations
 init_db()
-
-# Compute selection (CPU safe for Render 512MB RAM, CUDA for local RTX GPU)
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"[*] CityWatch AI running on compute device: {DEVICE}")
-
-model = YOLO("yolov8n.pt")
-model.to(DEVICE)
-
 
 def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculates spatial distance between two GPS coordinates in meters."""
@@ -62,9 +51,8 @@ def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: fl
          math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0) ** 2)
     return earth_radius_m * (2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a)))
 
-
 def optimize_and_save_image(upload_file: UploadFile, target_path: str):
-    """Downsamples uploads to max 800px to prevent 512MB RAM OOM crashes on Render."""
+    """Downsamples uploads to max 800px to maintain stability on free-tier RAM."""
     try:
         image = Image.open(upload_file.file)
         if image.mode in ("RGBA", "P"):
@@ -73,94 +61,6 @@ def optimize_and_save_image(upload_file: UploadFile, target_path: str):
         image.save(target_path, "JPEG", quality=80, optimize=True)
     finally:
         upload_file.file.close()
-
-
-def run_yolo_multi_hazard_triage(raw_img_path: str, annotated_img_path: str, selected_category: str) -> dict:
-    """
-    Runs YOLO inference with intelligent filtering:
-    - Filters out COCO non-civic false positives (birds, dogs, cats, indoor furniture).
-    - Pairs detections with the citizen's selected hazard category.
-    - Assigns council priority based on road safety severity.
-    """
-    try:
-        with torch.inference_mode():
-            results = model(raw_img_path, imgsz=320, device=DEVICE, verbose=False)
-
-        # Plot bounding boxes onto the image
-        plot_bgr = results[0].plot()
-        plot_rgb = plot_bgr[..., ::-1]
-        annotated_img = Image.fromarray(plot_rgb)
-        annotated_img.thumbnail((800, 800), Image.Resampling.LANCZOS)
-        annotated_img.save(annotated_img_path, "JPEG", quality=80, optimize=True)
-
-        # Classes that should NEVER be labeled as municipal defects
-        IRRELEVANT_COCO_CLASSES = {
-            "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear",
-            "zebra", "giraffe", "person", "chair", "couch", "potted plant",
-            "bed", "dining table", "toilet", "tv", "laptop", "remote", "cell phone",
-            "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"
-        }
-
-        valid_detections = []
-        for box in results[0].boxes:
-            class_id = int(box.cls[0].item())
-            class_name = model.names[class_id].lower()
-            conf = float(box.conf[0].item())
-
-            # Skip irrelevant false positives
-            if class_name in IRRELEVANT_COCO_CLASSES:
-                continue
-
-            valid_detections.append({
-                "label": class_name,
-                "confidence": round(conf, 2)
-            })
-
-        # --- Severity and Triage Determination ---
-        cat_lower = selected_category.lower()
-
-        # 1. Fallen Trees / Open Manholes / Traffic Lights are always Critical for road safety
-        if any(k in cat_lower for k in ["fallen tree", "vegetation", "manhole", "drain cover"]):
-            severity = "Critical"
-            primary_hazard = selected_category
-        elif "traffic light" in cat_lower or "street light" in cat_lower:
-            severity = "Critical" if "traffic light" in cat_lower else "Medium"
-            primary_hazard = selected_category
-        elif "pothole" in cat_lower or "surface" in cat_lower or "sinkhole" in cat_lower:
-            severity = "Critical" if any(v["confidence"] > 0.70 for v in valid_detections) else "Medium"
-            primary_hazard = selected_category
-        elif "illegal waste" in cat_lower or "dumping" in cat_lower:
-            severity = "Low"
-            primary_hazard = selected_category
-        else:
-            primary_hazard = selected_category
-            severity = "Medium"
-
-        # If a relevant civic obstacle was detected by YOLO, enrich the label
-        if valid_detections:
-            top_obj = valid_detections[0]
-            if top_obj["label"] in ["car", "truck", "bus"]:
-                primary_hazard = f"{selected_category} (Vehicle Impact Zone)"
-            elif top_obj["label"] in ["traffic light", "stop sign"]:
-                primary_hazard = f"{selected_category} (AI Confirmed: {top_obj['label'].title()})"
-
-        del results
-        gc.collect()
-
-        return {
-            "hazard_type": primary_hazard,
-            "severity": severity,
-            "detections": valid_detections
-        }
-    except Exception as e:
-        print(f"[AI TRIAGE ERROR] {e}")
-        Image.open(raw_img_path).save(annotated_img_path, "JPEG", quality=80)
-        return {
-            "hazard_type": selected_category,
-            "severity": "Medium",
-            "detections": []
-        }
-
 
 # --- Authentication Endpoints ---
 
@@ -190,7 +90,6 @@ def login(payload: LoginPayload):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password.")
     return {"success": True, "user": user}
-
 
 # --- Incident & Operations Endpoints ---
 
@@ -254,6 +153,8 @@ async def create_report(
             "is_duplicate": is_duplicate,
             "parent_report_id": target_parent_id,
             "duplicate_count": 1 if not is_duplicate else 0,
+            "upvote_count": 0,
+            "resolved_image_url": None,
             "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
 
@@ -268,6 +169,32 @@ async def create_report(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/report/{report_id}/upvote")
+def upvote(report_id: str):
+    """Community Endorsement: Increments upvotes for verified map pins."""
+    new_votes = upvote_report(report_id)
+    return {"success": True, "report_id": report_id, "upvotes": new_votes}
+
+@app.post("/api/v1/report/{report_id}/resolve")
+async def resolve_with_photo(
+    report_id: str,
+    after_image: UploadFile = File(...),
+    role: str = Query("admin")
+):
+    """Contractor Verification: Uploads resolution proof and marks work order resolved."""
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Unauthorized: Only Municipal Authority accounts can submit repair proof.")
+    
+    file_id = uuid.uuid4().hex[:10]
+    target_path = os.path.join(UPLOAD_DIR, f"resolved_{file_id}.jpg")
+    optimize_and_save_image(after_image, target_path)
+    resolved_url = f"/uploads/resolved_{file_id}.jpg"
+    
+    success = resolve_report_with_image(report_id, resolved_url)
+    if not success:
+        raise HTTPException(status_code=404, detail="Ticket not found.")
+    return {"success": True, "report_id": report_id, "resolved_image_url": resolved_url}
 
 @app.patch("/api/v1/report/{report_id}/status")
 def patch_status(report_id: str, new_status: str, role: Optional[str] = Query("admin")):

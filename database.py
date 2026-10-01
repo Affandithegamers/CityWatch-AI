@@ -1,4 +1,3 @@
-# database.py
 import sqlite3
 import hashlib
 from typing import Optional, List, Dict
@@ -15,7 +14,7 @@ def get_connection():
     return conn
 
 def init_db():
-    """Initializes tables for Users and Multi-Hazard Incident Reports."""
+    """Initializes tables and applies seamless schema migrations."""
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -46,9 +45,19 @@ def init_db():
         is_duplicate INTEGER DEFAULT 0,
         parent_report_id TEXT,
         duplicate_count INTEGER DEFAULT 1,
+        upvote_count INTEGER DEFAULT 0,
+        resolved_image_url TEXT,
         submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)
+
+    # Non-destructive schema migration for existing databases
+    cursor.execute("PRAGMA table_info(reports)")
+    existing_cols = [row[1] for row in cursor.fetchall()]
+    if "upvote_count" not in existing_cols:
+        cursor.execute("ALTER TABLE reports ADD COLUMN upvote_count INTEGER DEFAULT 0")
+    if "resolved_image_url" not in existing_cols:
+        cursor.execute("ALTER TABLE reports ADD COLUMN resolved_image_url TEXT")
 
     # Seed default municipal admin if not already present
     cursor.execute("SELECT id FROM users WHERE email = 'admin@dbkl.gov.my'")
@@ -60,7 +69,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("[*] SQLite Database initialized with Users & Reports tables.")
+    print("[*] SQLite Database initialized with upvoting and resolution capabilities.")
 
 # --- User Management ---
 
@@ -105,13 +114,14 @@ def insert_report(data: dict):
     INSERT INTO reports (
         report_id, latitude, longitude, hazard_type, severity,
         status, notes, image_url, reported_by, is_duplicate,
-        parent_report_id, duplicate_count, submitted_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        parent_report_id, duplicate_count, upvote_count, resolved_image_url, submitted_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data["report_id"], data["latitude"], data["longitude"], data["hazard_type"],
         data["severity"], data["status"], data["notes"], data["image_url"],
         data["reported_by"], int(data["is_duplicate"]), data["parent_report_id"],
-        data["duplicate_count"], data["submitted_at"]
+        data.get("duplicate_count", 1), data.get("upvote_count", 0),
+        data.get("resolved_image_url"), data["submitted_at"]
     ))
     conn.commit()
     conn.close()
@@ -144,6 +154,31 @@ def update_report_status(report_id: str, new_status: str) -> bool:
     conn.close()
     return updated
 
+def upvote_report(report_id: str) -> int:
+    """Increments the community endorsement counter for an existing hazard."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE reports SET upvote_count = COALESCE(upvote_count, 0) + 1 WHERE report_id = ?", (report_id.strip().upper(),))
+    cursor.execute("SELECT upvote_count FROM reports WHERE report_id = ?", (report_id.strip().upper(),))
+    row = cursor.fetchone()
+    conn.commit()
+    conn.close()
+    return row[0] if row else 0
+
+def resolve_report_with_image(report_id: str, resolved_image_url: str) -> bool:
+    """Marks work order resolved and links contractor photographic proof."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    UPDATE reports 
+    SET status = 'Resolved', resolved_image_url = ? 
+    WHERE report_id = ?
+    """, (resolved_image_url, report_id.strip().upper()))
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return updated
+
 def increment_duplicate(parent_id: str):
     conn = get_connection()
     cursor = conn.cursor()
@@ -163,7 +198,7 @@ def get_database_stats() -> dict:
     cursor.execute("SELECT COUNT(*) FROM reports WHERE status = 'Resolved'")
     resolved = cursor.fetchone()[0]
 
-    cursor.execute("SELECT COALESCE(SUM(duplicate_count - 1), 0) FROM reports WHERE is_duplicate = 0")
+    cursor.execute("SELECT COALESCE(SUM(duplicate_count - 1), 0) + COALESCE(SUM(upvote_count), 0) FROM reports WHERE is_duplicate = 0")
     dups = cursor.fetchone()[0]
     conn.close()
 
