@@ -2,7 +2,7 @@ import os
 from ultralytics import YOLO
 
 # 1. Load the pre-trained lightweight YOLOv8 nano model
-# This automatically downloads 'yolov8n.pt' (~6MB) on your first run
+#  automatically downloads 'yolov8n.pt' (~6MB) on first run
 model = YOLO("yolov8n.pt")
 
 def detect_hazard(image_path: str) -> list:
