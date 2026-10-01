@@ -5,15 +5,12 @@ import gc
 from datetime import datetime
 from typing import Optional, List
 from PIL import Image
-from ai_detector import run_yolo_inference
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import torch
 from ultralytics import YOLO
-model = YOLO("yolov8n.pt")
-model.train(data="road_hazards.yaml", epochs=30, imgsz=640, device=0)
 
 # 1. Initialize FastAPI Application
 app = FastAPI(
@@ -22,7 +19,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# 2. CORS Middleware
+# 2. CORS Middleware Configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -31,20 +28,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 3. Storage Directories
+# 3. Create Storage Directories
 UPLOAD_DIR = "uploads"
 STATIC_DIR = "static"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(STATIC_DIR, exist_ok=True)
 
-# 4. Mount Uploads Directory
+# Mount Uploads Directory
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-# 5. Device Configuration & Model Loading (CPU Mode for Render Stability)
-DEVICE = "cpu"
+# 4. Device Detection (CPU for Render, CUDA for local RTX laptop)
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"[*] CityWatch AI is starting up on compute device: {DEVICE}")
 
-# Load lightweight YOLOv8 nano model
+# Load YOLOv8 nano model
 model = YOLO("yolov8n.pt")
 model.to(DEVICE)
 
@@ -53,7 +50,7 @@ REPORTS_DATABASE: List[dict] = []
 
 
 def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Calculates great-circle distance between two GPS coordinates in meters."""
+    """Calculates the great-circle distance between two GPS coordinates in meters."""
     earth_radius_m = 6371000.0
     phi1 = math.radians(lat1)
     phi2 = math.radians(lat2)
@@ -68,8 +65,8 @@ def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: fl
 
 def optimize_and_save_image(upload_file: UploadFile, target_path: str):
     """
-    Resizes large phone photos (e.g., 4000x3000) down to max 800px.
-    This prevents Render's free tier (512MB RAM) from crashing with Out Of Memory (OOM).
+    Downsamples large phone camera images to max 800px to prevent
+    Render 512MB RAM Out-Of-Memory (OOM) crashes.
     """
     try:
         image = Image.open(upload_file.file)
@@ -82,9 +79,10 @@ def optimize_and_save_image(upload_file: UploadFile, target_path: str):
 
 
 def run_yolo_inference(image_path: str) -> dict:
-    """Runs YOLOv8 object detection with low-memory image sizing."""
+    """Runs YOLOv8 object detection using the dynamically selected device."""
     try:
         with torch.inference_mode():
+            # imgsz=320 reduces RAM usage on Render's free tier
             results = model(image_path, imgsz=320, device=DEVICE, verbose=False)
 
         detected_objects = []
@@ -115,7 +113,7 @@ def run_yolo_inference(image_path: str) -> dict:
             primary_defect = "General Road Defect"
             severity = "Low"
 
-        # Explicit garbage collection to release memory
+        # Explicit garbage collection to release RAM
         del results
         gc.collect()
 
@@ -125,7 +123,7 @@ def run_yolo_inference(image_path: str) -> dict:
             "detections": detected_objects
         }
     except Exception as e:
-        print(f"[AI ERROR] Inference failed: {e}")
+        print(f"[AI ERROR] Inference error: {e}")
         return {
             "primary_defect": "General Road Defect",
             "severity": "Low",
@@ -140,6 +138,7 @@ def health_status():
     return {
         "status": "online",
         "service": "CityWatch AI",
+        "device": DEVICE,
         "reports_count": len(REPORTS_DATABASE)
     }
 
@@ -160,11 +159,9 @@ async def create_hazard_report(
     image: UploadFile = File(...)
 ):
     try:
-        # Validate file
         if not image.content_type.startswith("image/"):
             raise HTTPException(status_code=400, detail="Uploaded file must be an image.")
 
-        # Save and downscale image to conserve RAM
         unique_filename = f"{uuid.uuid4().hex[:10]}.jpg"
         saved_filepath = os.path.join(UPLOAD_DIR, unique_filename)
         optimize_and_save_image(image, saved_filepath)
@@ -227,5 +224,5 @@ def update_status(report_id: str, new_status: str):
     raise HTTPException(status_code=404, detail="Report ID not found.")
 
 
-# Mount static website root at the end of routing
+# Mount static website root
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
