@@ -15,8 +15,8 @@ from ultralytics import YOLO
 # 1. Initialize FastAPI Application
 app = FastAPI(
     title="CityWatch AI",
-    description="Municipal Hazard Reporting System with YOLOv8 Vision & 10m Spatial Deduplication",
-    version="1.0.0"
+    description="Smart Municipal Hazard Triage System with YOLOv8 Vision & Spatial Deduplication",
+    version="2.0.0"
 )
 
 # 2. CORS Middleware Configuration
@@ -34,12 +34,11 @@ STATIC_DIR = "static"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(STATIC_DIR, exist_ok=True)
 
-# Mount Uploads Directory
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-# 4. Device Detection (CPU for Render, CUDA for local RTX laptop)
+# 4. Compute Device Selection (CPU for Render, CUDA for local RTX GPU)
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"[*] CityWatch AI is starting up on compute device: {DEVICE}")
+print(f"[*] CityWatch AI running on compute device: {DEVICE}")
 
 # Load YOLOv8 nano model
 model = YOLO("yolov8n.pt")
@@ -50,7 +49,7 @@ REPORTS_DATABASE: List[dict] = []
 
 
 def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Calculates the great-circle distance between two GPS coordinates in meters."""
+    """Calculates great-circle distance between two GPS coordinates in meters."""
     earth_radius_m = 6371000.0
     phi1 = math.radians(lat1)
     phi2 = math.radians(lat2)
@@ -64,10 +63,7 @@ def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: fl
 
 
 def optimize_and_save_image(upload_file: UploadFile, target_path: str):
-    """
-    Downsamples large phone camera images to max 800px to prevent
-    Render 512MB RAM Out-Of-Memory (OOM) crashes.
-    """
+    """Downsamples large camera uploads to max 800px to prevent Render 512MB RAM OOM crashes."""
     try:
         image = Image.open(upload_file.file)
         if image.mode in ("RGBA", "P"):
@@ -78,56 +74,64 @@ def optimize_and_save_image(upload_file: UploadFile, target_path: str):
         upload_file.file.close()
 
 
-def run_yolo_inference(image_path: str) -> dict:
-    """Runs YOLOv8 object detection using the dynamically selected device."""
+def run_yolo_inference_with_boxes(raw_img_path: str, annotated_img_path: str) -> dict:
+    """Runs YOLOv8 inference and draws bounding boxes directly onto the image."""
     try:
         with torch.inference_mode():
-            # imgsz=320 reduces RAM usage on Render's free tier
-            results = model(image_path, imgsz=320, device=DEVICE, verbose=False)
+            results = model(raw_img_path, imgsz=320, device=DEVICE, verbose=False)
+
+        # Draw AI bounding boxes onto the image
+        plot_bgr = results[0].plot()
+        plot_rgb = plot_bgr[..., ::-1]  # BGR to RGB conversion
+        annotated_img = Image.fromarray(plot_rgb)
+        annotated_img.thumbnail((800, 800), Image.Resampling.LANCZOS)
+        annotated_img.save(annotated_img_path, "JPEG", quality=80, optimize=True)
 
         detected_objects = []
-        for r in results:
-            for box in r.boxes:
-                class_id = int(box.cls[0].item())
-                class_name = model.names[class_id]
-                conf = float(box.conf[0].item())
-                coordinates = [round(val, 1) for val in box.xyxy[0].tolist()]
+        for box in results[0].boxes:
+            class_id = int(box.cls[0].item())
+            class_name = model.names[class_id]
+            conf = float(box.conf[0].item())
+            coordinates = [round(val, 1) for val in box.xyxy[0].tolist()]
 
-                detected_objects.append({
-                    "label": class_name,
-                    "confidence": round(conf, 2),
-                    "box": coordinates
-                })
+            detected_objects.append({
+                "label": class_name,
+                "confidence": round(conf, 2),
+                "box": coordinates
+            })
 
         if detected_objects:
             top_prediction = detected_objects[0]["label"].lower()
             top_conf = detected_objects[0]["confidence"]
-
             critical_keywords = ["hole", "crack", "fire", "wire", "traffic light", "stop sign"]
+
             if any(k in top_prediction for k in critical_keywords) or top_conf > 0.80:
                 severity = "Critical"
             else:
                 severity = "Medium"
-            primary_defect = detected_objects[0]["label"]
+            primary_defect = detected_objects[0]["label"].title()
         else:
             primary_defect = "General Road Defect"
             severity = "Low"
 
-        # Explicit garbage collection to release RAM
         del results
         gc.collect()
 
         return {
             "primary_defect": primary_defect,
             "severity": severity,
-            "detections": detected_objects
+            "detections": detected_objects,
+            "has_detections": len(detected_objects) > 0
         }
     except Exception as e:
         print(f"[AI ERROR] Inference error: {e}")
+        # Fallback to copy raw image if plotting fails
+        Image.open(raw_img_path).save(annotated_img_path, "JPEG", quality=80)
         return {
             "primary_defect": "General Road Defect",
             "severity": "Low",
-            "detections": []
+            "detections": [],
+            "has_detections": False
         }
 
 
@@ -143,12 +147,37 @@ def health_status():
     }
 
 
+@app.get("/api/v1/stats")
+def get_system_stats():
+    """Returns municipal KPI metrics for the Admin Command Dashboard."""
+    total = len(REPORTS_DATABASE)
+    critical = sum(1 for r in REPORTS_DATABASE if r.get("severity") == "Critical")
+    resolved = sum(1 for r in REPORTS_DATABASE if r.get("status") == "Resolved")
+    duplicates_prevented = sum(r.get("duplicate_count", 1) - 1 for r in REPORTS_DATABASE if not r.get("is_duplicate"))
+
+    return {
+        "total_reports": total,
+        "critical_count": critical,
+        "resolved_count": resolved,
+        "duplicates_prevented": max(0, duplicates_prevented)
+    }
+
+
 @app.get("/api/v1/reports")
 def get_reports():
     return {
         "count": len(REPORTS_DATABASE),
         "data": REPORTS_DATABASE
     }
+
+
+@app.get("/api/v1/report/{report_id}")
+def get_single_report(report_id: str):
+    """Fetches a specific ticket for the public tracking view."""
+    for report in REPORTS_DATABASE:
+        if report["report_id"].upper() == report_id.strip().upper():
+            return report
+    raise HTTPException(status_code=404, detail="Incident ticket not found.")
 
 
 @app.post("/api/v1/report")
@@ -162,12 +191,17 @@ async def create_hazard_report(
         if not image.content_type.startswith("image/"):
             raise HTTPException(status_code=400, detail="Uploaded file must be an image.")
 
-        unique_filename = f"{uuid.uuid4().hex[:10]}.jpg"
-        saved_filepath = os.path.join(UPLOAD_DIR, unique_filename)
-        optimize_and_save_image(image, saved_filepath)
+        file_id = uuid.uuid4().hex[:10]
+        raw_filename = f"raw_{file_id}.jpg"
+        annotated_filename = f"ai_{file_id}.jpg"
 
-        # Run AI detection
-        ai_output = run_yolo_inference(saved_filepath)
+        raw_filepath = os.path.join(UPLOAD_DIR, raw_filename)
+        annotated_filepath = os.path.join(UPLOAD_DIR, annotated_filename)
+
+        optimize_and_save_image(image, raw_filepath)
+
+        # Run AI detection and generate visual bounding boxes
+        ai_output = run_yolo_inference_with_boxes(raw_filepath, annotated_filepath)
 
         # 10-meter spatial proximity deduplication check
         is_duplicate = False
@@ -184,7 +218,6 @@ async def create_hazard_report(
                     existing["duplicate_count"] += 1
                     break
 
-        # Register ticket record
         report_record = {
             "report_id": f"REP-{uuid.uuid4().hex[:6].upper()}",
             "latitude": latitude,
@@ -193,7 +226,10 @@ async def create_hazard_report(
             "severity": ai_output["severity"],
             "status": "Merged (Duplicate)" if is_duplicate else "AI Verified",
             "notes": notes if notes else "No additional remarks.",
-            "image_url": f"/uploads/{unique_filename}",
+            "image_url": f"/uploads/{annotated_filename}",
+            "raw_image_url": f"/uploads/{raw_filename}",
+            "ai_detected": ai_output["has_detections"],
+            "detections": ai_output["detections"],
             "is_duplicate": is_duplicate,
             "parent_report_id": target_parent_id,
             "duplicate_count": 1 if not is_duplicate else 0,

@@ -1,320 +1,538 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CityWatch AI — Municipal Hazard Reporting</title>
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            display: flex; 
-            height: 100vh; 
-            height: 100dvh; 
-            background: #f8fafc; 
-            color: #1e293b; 
-            overflow: hidden;
-        }
-        
-        /* Mobile Top Navigation Tabs (Hidden on Desktop) */
-        #mobileNav {
-            display: none;
-            width: 100%;
-            background: #1e3a8a;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 2000;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-        .tab-btn {
-            flex: 1;
-            padding: 14px 10px;
-            background: none;
-            border: none;
-            color: #93c5fd;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            text-align: center;
-            border-bottom: 3px solid transparent;
-            transition: all 0.2s ease;
-        }
-        .tab-btn.active {
-            color: #ffffff;
-            border-bottom: 3px solid #38bdf8;
-            background: rgba(255, 255, 255, 0.08);
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CityWatch AI - Smart Municipal Hazard & Infrastructure Platform</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-        /* Sidebar Styling */
-        #sidebar { 
-            width: 440px; 
-            background: #ffffff; 
-            border-right: 1px solid #e2e8f0; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-            z-index: 1000; 
-            box-shadow: 2px 0 10px rgba(0,0,0,0.05); 
-        }
-        .sidebar-header { padding: 20px; background: #1e3a8a; color: #ffffff; }
-        .sidebar-header h1 { font-size: 20px; font-weight: 700; }
-        .sidebar-header p { font-size: 13px; opacity: 0.85; margin-top: 4px; }
-        
-        .sidebar-content { padding: 20px; overflow-y: auto; flex: 1; }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #475569; }
-        .form-group input, .form-group textarea { width: 100%; padding: 11px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
-        .coord-row { display: flex; gap: 8px; }
-        
-        button.btn-primary { width: 100%; padding: 13px; background: #2563eb; color: #ffffff; border: none; border-radius: 6px; font-weight: 700; font-size: 14px; cursor: pointer; }
-        button.btn-primary:hover { background: #1d4ed8; }
-        button.btn-gps { width: 100%; padding: 10px; background: #0ea5e9; color: #ffffff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 8px; }
-        button.btn-gps:hover { background: #0284c7; }
-
-        /* Notification Box */
-        #resultAlert { display: none; margin-top: 16px; padding: 12px; border-radius: 6px; font-size: 13px; line-height: 1.4; }
-        .alert-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
-        .alert-duplicate { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
-
-        /* Map Styling */
-        #map { flex: 1; height: 100%; }
-
-        /* Badges */
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-        .badge-Critical { background: #fee2e2; color: #b91c1c; }
-        .badge-Medium { background: #fef3c7; color: #b45309; }
-        .badge-Low { background: #dcfce7; color: #15803d; }
-
-        /* Responsive Mobile Styles */
-        @media (max-width: 768px) and (orientation: portrait), (max-width: 600px) {
-            body {
-                flex-direction: column;
-                padding-top: 48px;
-            }
-            #mobileNav {
-                display: flex;
-            }
-            .sidebar-header {
-                display: none;
-            }
-            #sidebar {
-                width: 100%;
-                height: 100%;
-                border-right: none;
-            }
-            #map {
-                width: 100%;
-                height: 100%;
-                display: none;
-            }
-            body.show-map-view #sidebar {
-                display: none;
-            }
-            body.show-map-view #map {
-                display: block;
-            }
-        }
-    </style>
+  <style>
+    .leaflet-popup-content-wrapper { border-radius: 12px; overflow: hidden; padding: 0; }
+    .leaflet-popup-content { margin: 0; line-height: 1.4; }
+  </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen">
 
-    <!-- Mobile Navigation Tabs -->
-    <div id="mobileNav">
-        <button id="tabReport" class="tab-btn active" onclick="switchTab('report')">📝 Report Hazard</button>
-        <button id="tabMap" class="tab-btn" onclick="switchTab('map')">🗺️ Live Map</button>
+  <!-- Top Global Navigation Bar -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('report')">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-white text-lg shadow-sm">
+          CW
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight leading-tight">CityWatch AI</h1>
+          <p class="text-xs text-slate-400">Smart Municipal Vision & Triage Platform</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center bg-slate-800 p-1 rounded-xl text-xs sm:text-sm font-medium">
+        <button id="nav-report" onclick="switchView('report')" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white transition">
+          Report Hazard
+        </button>
+        <button id="nav-map" onclick="switchView('map')" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition">
+          Live Map
+        </button>
+        <button id="nav-track" onclick="switchView('track')" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition">
+          Track Ticket
+        </button>
+        <button id="nav-admin" onclick="switchView('admin')" class="px-3 py-1.5 rounded-lg text-amber-400 hover:text-amber-300 font-semibold transition">
+          Council Ops
+        </button>
+      </nav>
+
+      <!-- System Status Badge -->
+      <div class="hidden md:flex items-center space-x-2 text-xs text-emerald-400 bg-slate-800/80 px-3 py-1.5 rounded-full border border-emerald-500/20">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>KL Grid Online</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+
+    <!-- VIEW 1: CITIZEN REPORTING & SPLIT MAP VIEW -->
+    <div id="view-report" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Incident Submission Form -->
+      <div class="lg:col-span-4 bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
+        <h2 class="text-lg font-bold text-slate-900 mb-1">Report Public Hazard</h2>
+        <p class="text-xs text-slate-500 mb-4">AI automatically triages defect severity and clusters duplicates within 10 meters.</p>
+
+        <form id="incidentForm" class="space-y-4">
+          <!-- Incident Coordinates -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Location Coordinates</label>
+            <button type="button" onclick="detectUserLocation()" class="w-full mb-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 py-2 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition">
+              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <span>Auto-Detect Current GPS</span>
+            </button>
+            <div class="grid grid-cols-2 gap-2">
+              <input type="number" step="any" id="latInput" placeholder="Latitude" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-blue-500" />
+              <input type="number" step="any" id="lngInput" placeholder="Longitude" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-blue-500" />
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Or click anywhere on the map to drop a pin.</p>
+          </div>
+
+          <!-- Camera Upload with Live Preview -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Incident Photograph</label>
+            <input type="file" id="imageInput" accept="image/*" required class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer" />
+            
+            <!-- Live Image Preview Container -->
+            <div id="imagePreviewContainer" class="hidden mt-2 relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 h-36">
+              <img id="imagePreview" src="" alt="Incident Preview" class="w-full h-full object-cover" />
+              <span class="absolute bottom-1.5 right-1.5 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-md backdrop-blur-sm">Image Staged</span>
+            </div>
+          </div>
+
+          <!-- Remarks -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Description / Remarks</label>
+            <textarea id="notesInput" rows="2" placeholder="e.g., Deep pothole near pedestrian crossing" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-blue-500"></textarea>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-xs shadow-sm transition flex items-center justify-center space-x-2">
+            <span>Submit to AI Verification</span>
+          </button>
+        </form>
+
+        <!-- Dynamic Result Banner -->
+        <div id="feedbackBanner" class="hidden mt-4 p-3 rounded-xl text-xs font-medium border"></div>
+      </div>
+
+      <!-- Live Split Interactive Map -->
+      <div class="lg:col-span-8 bg-white p-2 rounded-2xl shadow-sm border border-slate-200 relative min-h-[460px] flex flex-col">
+        <div class="flex justify-between items-center px-3 py-2 border-b border-slate-100">
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-xs uppercase tracking-wider text-slate-700">Live Spatial Grid</span>
+            <span id="mapReportCountBadge" class="bg-blue-100 text-blue-800 text-[10px] font-semibold px-2 py-0.5 rounded-full">0 Reports</span>
+          </div>
+
+          <!-- Severity Legend -->
+          <div class="flex items-center space-x-3 text-[11px] text-slate-500">
+            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-rose-500 mr-1"></span>Critical</span>
+            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Medium</span>
+            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>Low</span>
+          </div>
+        </div>
+        <div id="map" class="w-full flex-1 rounded-xl z-0" style="min-height: 440px;"></div>
+      </div>
     </div>
 
-    <!-- Citizen Form -->
-    <div id="sidebar">
-        <div class="sidebar-header">
-            <h1>🚧 CityWatch AI</h1>
-            <p>Smart Municipal Hazard & Infrastructure Reporting</p>
-        </div>
-
-        <div class="sidebar-content">
-            <form id="reportForm">
-                <div class="form-group">
-                    <label>Incident Location</label>
-                    <button type="button" class="btn-gps" onclick="fetchCurrentGPS()">📍 Auto-Detect Current Location</button>
-                    <div class="coord-row">
-                        <input type="text" id="latitude" placeholder="Latitude" required readonly>
-                        <input type="text" id="longitude" placeholder="Longitude" required readonly>
-                    </div>
-                    <small style="color: #64748b; font-size: 11px; margin-top: 4px; display: block;">Or switch to the map tab and tap to place a pin.</small>
-                </div>
-
-                <div class="form-group">
-                    <label>Upload Incident Photo</label>
-                    <input type="file" id="imageInput" accept="image/*" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Description / Remarks</label>
-                    <textarea id="notes" rows="3" placeholder="e.g. Deep pothole on left lane near traffic light"></textarea>
-                </div>
-
-                <button type="submit" id="submitBtn" class="btn-primary">Submit to AI Verification</button>
-            </form>
-
-            <div id="resultAlert"></div>
-        </div>
+    <!-- VIEW 2: FULLSCREEN MAP VIEW -->
+    <div id="view-map" class="hidden bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
+      <div id="map-full" class="w-full rounded-xl" style="height: 75vh;"></div>
     </div>
 
-    <!-- Map Container -->
-    <div id="map"></div>
+    <!-- VIEW 3: CITIZEN TICKET TRACKER -->
+    <div id="view-track" class="hidden max-w-2xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200">
+      <div class="text-center mb-6">
+        <h2 class="text-xl font-bold text-slate-900">Track Incident Progress</h2>
+        <p class="text-xs text-slate-500 mt-1">Enter your municipal ticket reference ID to check repair milestones.</p>
+      </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // Initialize Map
-        const map = L.map('map').setView([3.1390, 101.6869], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+      <div class="flex space-x-2 mb-6">
+        <input type="text" id="trackInput" placeholder="Enter Ticket Code (e.g. REP-8F12B0)" class="flex-1 text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-blue-500 uppercase tracking-wider" />
+        <button onclick="trackTicket()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 rounded-xl text-sm transition">
+          Track
+        </button>
+      </div>
 
-        let activeClickMarker = null;
+      <div id="trackResult" class="hidden space-y-6 pt-4 border-t border-slate-100"></div>
+    </div>
 
-        // Mobile Tab Switcher
-        function switchTab(view) {
-            const reportBtn = document.getElementById('tabReport');
-            const mapBtn = document.getElementById('tabMap');
+    <!-- VIEW 4: MUNICIPAL OFFICER / ADMIN COMMAND PORTAL -->
+    <div id="view-admin" class="hidden space-y-6">
+      
+      <!-- Admin Login Gate -->
+      <div id="adminLoginGate" class="max-w-md mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 text-center">
+        <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 font-bold text-xl">
+          🔒
+        </div>
+        <h2 class="text-lg font-bold text-slate-900">Municipal Authority Portal</h2>
+        <p class="text-xs text-slate-500 mt-1 mb-4">Restricted access for City Council Engineers & Road Contractors (DBKL / JKR).</p>
+        
+        <input type="password" id="adminPasscode" placeholder="Enter Officer PIN (dbkl2026)" class="w-full text-center text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl mb-3 focus:outline-blue-500 font-mono tracking-widest" />
+        <button onclick="verifyAdminPasscode()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-xl text-xs transition">
+          Authorize Dashboard Access
+        </button>
+      </div>
 
-            if (view === 'map') {
-                document.body.classList.add('show-map-view');
-                mapBtn.classList.add('active');
-                reportBtn.classList.remove('active');
-                setTimeout(() => { map.invalidateSize(); }, 200);
-            } else {
-                document.body.classList.remove('show-map-view');
-                reportBtn.classList.add('active');
-                mapBtn.classList.remove('active');
-            }
-        }
+      <!-- Authenticated Admin Operations Center -->
+      <div id="adminDashboardContent" class="hidden space-y-6">
+        
+        <!-- Live KPI Stats Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Open Tickets</p>
+            <p id="kpiTotal" class="text-2xl font-black text-slate-900 mt-1">0</p>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-rose-500">Critical Priority</p>
+            <p id="kpiCritical" class="text-2xl font-black text-rose-600 mt-1">0</p>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-500">10m Duplicates Merged</p>
+            <p id="kpiDuplicates" class="text-2xl font-black text-blue-600 mt-1">0</p>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-500">Resolved Hazards</p>
+            <p id="kpiResolved" class="text-2xl font-black text-emerald-600 mt-1">0</p>
+          </div>
+        </div>
 
-        // GPS Auto-detection
-        function fetchCurrentGPS() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    updateFormCoordinates(lat, lon);
-                    map.setView([lat, lon], 16);
-                    alert("📍 GPS coordinates captured successfully!");
-                }, () => alert("Could not retrieve GPS. Please allow location permissions in your browser."));
-            }
-        }
+        <!-- Municipal Incident Work-Order Table -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Incident Triage & Contractor Dispatch</h3>
+              <p class="text-xs text-slate-500">Modify live ticket statuses to mobilize field maintenance crews.</p>
+            </div>
+            <button onclick="loadAdminReports()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
+              Refresh Data
+            </button>
+          </div>
 
-        // Pin Selection via Map Tap/Click
-        map.on('click', function(e) {
-            updateFormCoordinates(e.latlng.lat, e.latlng.lng);
-            if (window.innerWidth <= 768) {
-                if (confirm("📍 Location selected. Return to the report form?")) {
-                    switchTab('report');
-                }
-            }
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="py-3 px-4">Ticket ID</th>
+                  <th class="py-3 px-4">AI Classification</th>
+                  <th class="py-3 px-4">Severity</th>
+                  <th class="py-3 px-4">Coordinates</th>
+                  <th class="py-3 px-4">Duplicates</th>
+                  <th class="py-3 px-4">Current Status</th>
+                  <th class="py-3 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminTableBody" class="divide-y divide-slate-100 text-slate-700">
+                <!-- Dynamically generated rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Application Logic -->
+  <script>
+    let map, splitMapMarker, activeReports = [];
+
+    // Initialize Leaflet Map
+    function initMap() {
+      map = L.map('map').setView([3.1390, 101.6869], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+      // Map Click Handler to place coordinates
+      map.on('click', function(e) {
+        document.getElementById('latInput').value = e.latlng.lat.toFixed(6);
+        document.getElementById('lngInput').value = e.latlng.lng.toFixed(6);
+        placeTempPin(e.latlng.lat, e.latlng.lng);
+      });
+    }
+
+    function placeTempPin(lat, lng) {
+      if (splitMapMarker) map.removeLayer(splitMapMarker);
+      splitMapMarker = L.marker([lat, lng]).addTo(map)
+        .bindPopup("<div class='p-2 font-sans text-xs'><b>Selected Point</b><br>Coordinates ready for submission.</div>")
+        .openPopup();
+    }
+
+    // Single-Tap GPS Geolocation
+    function detectUserLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos.coords.latitude.toFixed(6);
+            const lng = pos.coords.longitude.toFixed(6);
+            document.getElementById('latInput').value = lat;
+            document.getElementById('lngInput').value = lng;
+            map.setView([lat, lng], 15);
+            placeTempPin(lat, lng);
+          },
+          (err) => alert("GPS auto-detection failed: " + err.message)
+        );
+      } else {
+        alert("Geolocation is not supported by your browser.");
+      }
+    }
+
+    // Pre-Submission Image Preview Handler
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          document.getElementById('imagePreview').src = event.target.result;
+          document.getElementById('imagePreviewContainer').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // View Navigation Switcher
+    function switchView(viewName) {
+      const views = ['report', 'map', 'track', 'admin'];
+      views.forEach(v => {
+        document.getElementById(`view-${v}`).classList.add('hidden');
+        const navBtn = document.getElementById(`nav-${v}`);
+        navBtn.classList.remove('bg-blue-600', 'text-white');
+        navBtn.classList.add('text-slate-300');
+      });
+
+      document.getElementById(`view-${viewName}`).classList.remove('hidden');
+      const activeNav = document.getElementById(`nav-${viewName}`);
+      activeNav.classList.add('bg-blue-600', 'text-white');
+      activeNav.classList.remove('text-slate-300');
+
+      if (viewName === 'report') {
+        setTimeout(() => map.invalidateSize(), 200);
+      }
+      if (viewName === 'admin') {
+        loadAdminStats();
+        loadAdminReports();
+      }
+    }
+
+    // Fetch and Plot Incident Pins on Leaflet
+    async function loadReports() {
+      try {
+        const res = await fetch('/api/v1/reports');
+        const json = await res.json();
+        activeReports = json.data;
+
+        document.getElementById('mapReportCountBadge').textContent = `${json.count} Reports`;
+
+        // Clear existing markers except temp picker
+        map.eachLayer((layer) => {
+          if (layer instanceof L.CircleMarker) map.removeLayer(layer);
         });
 
-        function updateFormCoordinates(lat, lon) {
-            document.getElementById('latitude').value = lat.toFixed(6);
-            document.getElementById('longitude').value = lon.toFixed(6);
+        activeReports.forEach(r => {
+          let markerColor = "#10b981"; // Low (Green)
+          if (r.severity === "Critical") markerColor = "#ef4444"; // Critical (Red)
+          else if (r.severity === "Medium") markerColor = "#f59e0b"; // Medium (Amber)
 
-            if (activeClickMarker) map.removeLayer(activeClickMarker);
-            activeClickMarker = L.marker([lat, lon]).addTo(map).bindPopup("Selected Point").openPopup();
+          const circle = L.circleMarker([r.latitude, r.longitude], {
+            radius: 8,
+            fillColor: markerColor,
+            color: "#ffffff",
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.85
+          }).addTo(map);
+
+          // Card Popup with AI Bounding Box Annotated Photo
+          const popupContent = `
+            <div class="w-64 font-sans text-xs">
+              <img src="${r.image_url}" class="w-full h-32 object-cover" />
+              <div class="p-3">
+                <div class="flex justify-between items-center mb-1">
+                  <span class="font-bold text-slate-800">${r.report_id}</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                    r.severity === 'Critical' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
+                  }">${r.severity}</span>
+                </div>
+                <p class="font-semibold text-slate-700">${r.hazard_type}</p>
+                <p class="text-slate-500 text-[11px] mt-1">${r.notes}</p>
+                <div class="mt-2 pt-2 border-t border-slate-100 flex justify-between text-[10px] text-slate-400">
+                  <span>Status: <b>${r.status}</b></span>
+                  <span>Verifications: <b>${r.duplicate_count}</b></span>
+                </div>
+              </div>
+            </div>
+          `;
+          circle.bindPopup(popupContent);
+        });
+
+      } catch (err) {
+        console.error("Error loading reports:", err);
+      }
+    }
+
+    // Submit Incident Form
+    document.getElementById('incidentForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submitBtn');
+      const banner = document.getElementById('feedbackBanner');
+      
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = "<span>Analyzing Image with YOLOv8...</span>";
+
+      const formData = new FormData();
+      formData.append("latitude", document.getElementById('latInput').value);
+      formData.append("longitude", document.getElementById('lngInput').value);
+      formData.append("notes", document.getElementById('notesInput').value);
+      formData.append("image", document.getElementById('imageInput').files[0]);
+
+      try {
+        const response = await fetch('/api/v1/report', { method: 'POST', body: formData });
+        const res = await response.json();
+
+        banner.classList.remove('hidden', 'bg-rose-50', 'text-rose-700', 'border-rose-200', 'bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
+
+        if (res.success) {
+          banner.classList.add('bg-emerald-50', 'text-emerald-800', 'border-emerald-200');
+          banner.innerHTML = `
+            <b>Success!</b> Ticket Created: <b>${res.ticket.report_id}</b><br>
+            AI Assessment: <b>${res.ticket.hazard_type}</b> (${res.ticket.severity} Priority)<br>
+            ${res.is_duplicate ? '📍 Merged with existing report within 10m.' : '✓ Incident plotted on active map.'}
+          `;
+          document.getElementById('incidentForm').reset();
+          document.getElementById('imagePreviewContainer').classList.add('hidden');
+          loadReports();
+        } else {
+          throw new Error(res.message || "Failed to submit.");
         }
+      } catch (err) {
+        banner.classList.add('bg-rose-50', 'text-rose-700', 'border-rose-200');
+        banner.textContent = "Submission error: " + err.message;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = "<span>Submit to AI Verification</span>";
+      }
+    });
 
-        // Fetch and display active hazard markers
-        async function loadReportMarkers() {
-            try {
-                const response = await fetch('/api/v1/reports');
-                const json = await response.json();
+    // Public Ticket Tracker Logic
+    async function trackTicket() {
+      const code = document.getElementById('trackInput').value.trim();
+      const container = document.getElementById('trackResult');
+      if (!code) return;
 
-                json.data.forEach(ticket => {
-                    const markerColor = ticket.severity === 'Critical' ? '#ef4444' : (ticket.severity === 'Medium' ? '#f59e0b' : '#10b981');
-                    
-                    const marker = L.circleMarker([ticket.latitude, ticket.longitude], {
-                        radius: 9,
-                        fillColor: markerColor,
-                        color: '#ffffff',
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.9
-                    }).addTo(map);
+      try {
+        const res = await fetch(`/api/v1/report/${code}`);
+        if (!res.ok) throw new Error("Ticket ID not found.");
+        const t = await res.json();
 
-                    marker.bindPopup(`
-                        <div style="min-width: 170px;">
-                            <h4 style="margin: 0 0 6px 0;">${ticket.report_id}</h4>
-                            <span class="badge badge-${ticket.severity}">${ticket.severity}</span>
-                            <p style="margin: 6px 0; font-size: 13px;"><b>Defect:</b> ${ticket.hazard_type}</p>
-                            <p style="margin: 4px 0; font-size: 12px; color: #475569;">${ticket.notes}</p>
-                            <p style="margin: 4px 0; font-size: 12px;"><b>Merged Reports:</b> ${ticket.duplicate_count}</p>
-                            <img src="${ticket.image_url}" style="width: 100%; border-radius: 4px; margin-top: 6px; max-height: 110px; object-fit: cover;" />
-                            <small style="color: #94a3b8; display: block; margin-top: 4px;">${ticket.submitted_at}</small>
-                        </div>
-                    `);
-                });
-            } catch (err) {
-                console.error("Error loading markers:", err);
-            }
-        }
+        const steps = ['Submitted', 'AI Verified', 'Dispatched', 'Resolved'];
+        const currentIdx = steps.indexOf(t.status) !== -1 ? steps.indexOf(t.status) : 1;
 
-        // Form Submit Handler
-        document.getElementById('reportForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const submitBtn = document.getElementById('submitBtn');
-            const alertBox = document.getElementById('resultAlert');
+        container.classList.remove('hidden');
+        container.innerHTML = `
+          <div class="flex justify-between items-start bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div>
+              <span class="text-xs text-slate-400 font-mono">TICKET #${t.report_id}</span>
+              <h3 class="text-base font-bold text-slate-900">${t.hazard_type}</h3>
+              <p class="text-xs text-slate-500 mt-1">${t.notes}</p>
+            </div>
+            <img src="${t.image_url}" class="w-16 h-16 rounded-lg object-cover border" />
+          </div>
 
-            submitBtn.disabled = true;
-            submitBtn.innerText = "⏳ YOLOv8 Verifying...";
-            alertBox.style.display = "none";
+          <!-- Progress Stepper -->
+          <div class="grid grid-cols-4 gap-2 pt-2">
+            ${steps.map((s, idx) => `
+              <div class="text-center">
+                <div class="w-8 h-8 mx-auto rounded-full flex items-center justify-center text-xs font-bold ${
+                  idx <= currentIdx ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
+                }">
+                  ${idx <= currentIdx ? '✓' : idx + 1}
+                </div>
+                <p class="text-[11px] font-semibold mt-1.5 ${idx <= currentIdx ? 'text-blue-600' : 'text-slate-400'}">${s}</p>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } catch (err) {
+        container.classList.remove('hidden');
+        container.innerHTML = `<p class="text-rose-600 text-xs font-semibold text-center">${err.message}</p>`;
+      }
+    }
 
-            const formData = new FormData();
-            formData.append("latitude", document.getElementById('latitude').value);
-            formData.append("longitude", document.getElementById('longitude').value);
-            formData.append("notes", document.getElementById('notes').value);
-            formData.append("image", document.getElementById('imageInput').files[0]);
+    // Council Admin Portal Passcode Gate
+    function verifyAdminPasscode() {
+      const pin = document.getElementById('adminPasscode').value.trim();
+      if (pin === "dbkl2026" || pin === "admin123") {
+        document.getElementById('adminLoginGate').classList.add('hidden');
+        document.getElementById('adminDashboardContent').classList.remove('hidden');
+        loadAdminStats();
+        loadAdminReports();
+      } else {
+        alert("Invalid Passcode. Enter: dbkl2026 or admin123");
+      }
+    }
 
-            try {
-                const res = await fetch('/api/v1/report', {
-                    method: 'POST',
-                    body: formData
-                });
+    async function loadAdminStats() {
+      try {
+        const res = await fetch('/api/v1/stats');
+        const s = await res.json();
+        document.getElementById('kpiTotal').textContent = s.total_reports;
+        document.getElementById('kpiCritical').textContent = s.critical_count;
+        document.getElementById('kpiDuplicates').textContent = s.duplicates_prevented;
+        document.getElementById('kpiResolved').textContent = s.resolved_count;
+      } catch (e) { console.error(e); }
+    }
 
-                if (!res.ok) {
-                    const errData = await res.json().catch(() => null);
-                    throw new Error(errData ? errData.detail : `Server error (${res.status})`);
-                }
+    async function loadAdminReports() {
+      try {
+        const res = await fetch('/api/v1/reports');
+        const json = await res.json();
+        const tbody = document.getElementById('adminTableBody');
+        tbody.innerHTML = "";
 
-                const result = await res.json();
-                alertBox.style.display = "block";
+        json.data.forEach(r => {
+          const tr = document.createElement('tr');
+          tr.className = "hover:bg-slate-50/80 transition";
+          tr.innerHTML = `
+            <td class="py-3 px-4 font-mono font-bold text-slate-900">${r.report_id}</td>
+            <td class="py-3 px-4">${r.hazard_type}</td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                r.severity === 'Critical' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
+              }">${r.severity}</span>
+            </td>
+            <td class="py-3 px-4 text-slate-500 font-mono text-[11px]">${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}</td>
+            <td class="py-3 px-4 font-semibold text-blue-600">${r.duplicate_count}</td>
+            <td class="py-3 px-4 font-semibold">${r.status}</td>
+            <td class="py-3 px-4 text-right">
+              <select onchange="updateTicketStatus('${r.report_id}', this.value)" class="text-xs bg-slate-100 border border-slate-300 rounded p-1">
+                <option value="" disabled selected>Update...</option>
+                <option value="AI Verified">AI Verified</option>
+                <option value="Dispatched">Dispatched</option>
+                <option value="Resolved">Resolved</option>
+              </select>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (e) { console.error(e); }
+    }
 
-                if (result.is_duplicate) {
-                    alertBox.className = "alert-duplicate";
-                    alertBox.innerHTML = `⚠️ <b>Duplicate Merged (10m Radius):</b> Merged into parent ticket: <b>${result.ticket.parent_report_id}</b>`;
-                } else {
-                    alertBox.className = "alert-success";
-                    alertBox.innerHTML = `✅ <b>Success!</b> AI classified: <b>${result.ticket.hazard_type}</b> (${result.ticket.severity} Risk)`;
-                }
+    async function updateTicketStatus(reportId, newStatus) {
+      if (!newStatus) return;
+      try {
+        await fetch(`/api/v1/report/${reportId}/status?new_status=${encodeURIComponent(newStatus)}`, {
+          method: 'PATCH'
+        });
+        loadAdminReports();
+        loadAdminStats();
+        loadReports();
+      } catch (err) {
+        alert("Failed to update status: " + err.message);
+      }
+    }
 
-                loadReportMarkers();
-
-                if (window.innerWidth <= 768) {
-                    setTimeout(() => { switchTab('map'); }, 1500);
-                }
-            } catch (err) {
-                alertBox.style.display = "block";
-                alertBox.className = "alert-duplicate";
-                alertBox.innerText = "Submission Error: " + err.message;
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Submit to AI Verification";
-            }
-        };
-
-        // Load existing pins on page load
-        loadReportMarkers();
-    </script>
+    // Initialize application on load
+    window.onload = () => {
+      initMap();
+      loadReports();
+    };
+  </script>
 </body>
 </html>
