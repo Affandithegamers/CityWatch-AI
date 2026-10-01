@@ -3,236 +3,362 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CityWatch AI - Smart Municipal Hazard & Infrastructure Platform</title>
+  <title>CityWatch AI - Municipal Infrastructure Platform</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
   <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    .leaflet-popup-content-wrapper { border-radius: 12px; overflow: hidden; padding: 0; }
+    .leaflet-popup-content-wrapper { border-radius: 14px; overflow: hidden; padding: 0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
     .leaflet-popup-content { margin: 0; line-height: 1.4; }
+
+    /* Fluid View Transitions */
+    @keyframes viewFadeSlide {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .view-transition {
+      animation: viewFadeSlide 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Modal Pop-In Transition */
+    @keyframes modalPopIn {
+      from {
+        opacity: 0;
+        transform: scale(0.94) translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .modal-enter {
+      animation: modalPopIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Smooth Drag & Drop Glow Transition */
+    .drag-active {
+      border-color: #3b82f6 !important;
+      background-color: #eff6ff !important;
+      transform: scale(1.01);
+    }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen">
+<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen font-sans antialiased selection:bg-blue-600 selection:text-white">
 
-  <!-- Top Global Navigation Bar -->
-  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+  <!-- Global Header & Navigation Bar -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50 transition-colors duration-200">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
-      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('report')">
-        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-white text-lg shadow-sm">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center space-x-3 cursor-pointer group" onclick="switchView('report')">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 group-hover:bg-blue-500 group-hover:rotate-3 flex items-center justify-center font-black text-white text-base shadow-sm transition-all duration-300">
           CW
         </div>
         <div>
-          <h1 class="text-lg font-bold tracking-tight leading-tight">CityWatch AI</h1>
-          <p class="text-xs text-slate-400">Smart Municipal Vision & Triage Platform</p>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight group-hover:text-blue-200 transition-colors duration-200">CityWatch AI</h1>
+          <p class="text-[11px] text-slate-400">Intelligent Municipal Hazard Platform</p>
         </div>
       </div>
 
       <!-- Navigation Tabs -->
-      <nav class="flex items-center bg-slate-800 p-1 rounded-xl text-xs sm:text-sm font-medium">
-        <button id="nav-report" onclick="switchView('report')" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white transition">
-          Report Hazard
+      <nav class="flex items-center bg-slate-800 p-1 rounded-xl text-xs font-semibold shadow-inner">
+        <button id="nav-report" onclick="switchView('report')" class="px-3.5 py-1.5 rounded-lg bg-blue-600 text-white shadow-sm transition-all duration-200 active:scale-95">
+          Report Defect
         </button>
-        <button id="nav-map" onclick="switchView('map')" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition">
-          Live Map
+        <button id="nav-myreports" onclick="switchView('myreports')" class="px-3.5 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all duration-200 active:scale-95">
+          My Reports
         </button>
-        <button id="nav-track" onclick="switchView('track')" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition">
+        <button id="nav-track" onclick="switchView('track')" class="px-3.5 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all duration-200 active:scale-95">
           Track Ticket
         </button>
-        <button id="nav-admin" onclick="switchView('admin')" class="px-3 py-1.5 rounded-lg text-amber-400 hover:text-amber-300 font-semibold transition">
+        <button id="nav-admin" onclick="switchView('admin')" class="px-3.5 py-1.5 rounded-lg text-amber-400 hover:text-amber-300 transition-all duration-200 active:scale-95">
           Council Ops
         </button>
       </nav>
 
-      <!-- System Status Badge -->
-      <div class="hidden md:flex items-center space-x-2 text-xs text-emerald-400 bg-slate-800/80 px-3 py-1.5 rounded-full border border-emerald-500/20">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span>KL Grid Online</span>
+      <!-- User Profile Header Widget -->
+      <div class="flex items-center space-x-2">
+        <div id="userBadge" class="bg-slate-800 border border-slate-700/80 px-3 py-1.5 rounded-lg text-xs flex items-center space-x-2 shadow-sm transition-all duration-200">
+          <span id="userDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="userNameDisplay" class="font-medium text-slate-200">Guest Citizen</span>
+        </div>
+        <button onclick="openAuthModal()" id="authActionBtn" class="text-xs bg-blue-600 hover:bg-blue-700 active:scale-95 font-semibold px-3 py-1.5 rounded-lg text-white shadow-sm transition-all duration-200 cursor-pointer">
+          Sign In / Register
+        </button>
       </div>
+
     </div>
   </header>
 
-  <!-- Main View Container -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
-
-    <!-- VIEW 1: CITIZEN REPORTING & SPLIT MAP VIEW -->
-    <div id="view-report" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <!-- AUTHENTICATION MODAL (LOGIN & CREATE ACCOUNT) -->
+  <div id="authModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
+    <div id="authModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 transition-all duration-300">
       
-      <!-- Incident Submission Form -->
-      <div class="lg:col-span-4 bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
-        <h2 class="text-lg font-bold text-slate-900 mb-1">Report Public Hazard</h2>
-        <p class="text-xs text-slate-500 mb-4">AI automatically triages defect severity and clusters duplicates within 10 meters.</p>
+      <div class="flex border-b border-slate-200 mb-5">
+        <button id="tabLoginBtn" onclick="switchAuthTab('login')" class="flex-1 py-2.5 text-xs font-bold border-b-2 border-blue-600 text-blue-600 transition-all duration-200">
+          Sign In
+        </button>
+        <button id="tabRegisterBtn" onclick="switchAuthTab('register')" class="flex-1 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-all duration-200">
+          Create Account
+        </button>
+        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-700 text-lg px-2 transition-colors duration-150">&times;</button>
+      </div>
+
+      <!-- FORM 1: LOGIN -->
+      <form id="loginForm" class="space-y-4" onsubmit="handleLogin(event)">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
+          <input type="email" id="loginEmail" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" placeholder="name@domain.com" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+          <input type="password" id="loginPassword" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" placeholder="••••••••" />
+        </div>
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold py-2.5 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">
+          Sign In
+        </button>
+      </form>
+
+      <!-- FORM 2: CREATE NEW ACCOUNT (REGISTER) -->
+      <form id="registerForm" class="hidden space-y-3" onsubmit="handleRegister(event)">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Full Name</label>
+          <input type="text" id="regName" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" placeholder="e.g. John Doe" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
+          <input type="email" id="regEmail" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" placeholder="e.g. user@gmail.com" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+          <input type="password" id="regPassword" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" placeholder="Create a password" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Account Role</label>
+          <select id="regRole" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 cursor-pointer">
+            <option value="citizen">Public Citizen (Report & Track)</option>
+            <option value="admin">Municipal Authority (DBKL / Contractor Ops)</option>
+          </select>
+        </div>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-semibold py-2.5 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">
+          Register to Database
+        </button>
+      </form>
+
+      <div id="authErrorBanner" class="hidden mt-3 p-2.5 rounded-lg text-xs bg-rose-50 text-rose-700 border border-rose-200 text-center view-transition"></div>
+    </div>
+  </div>
+
+  <!-- Main View Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 relative">
+
+    <!-- VIEW 1: CITIZEN REPORT FORM & LIVE MAP -->
+    <div id="view-report" class="grid grid-cols-1 lg:grid-cols-12 gap-6 view-transition">
+      
+      <!-- Submission Form Sidebar -->
+      <div class="lg:col-span-4 bg-white p-5 rounded-2xl shadow-sm hover:shadow-md border border-slate-200/90 transition-all duration-300">
+        <h2 class="text-base font-bold text-slate-900 mb-1">Report Public Hazard</h2>
+        <p class="text-xs text-slate-500 mb-4">Multi-hazard AI verification with 10m spatial deduplication.</p>
 
         <form id="incidentForm" class="space-y-4">
-          <!-- Incident Coordinates -->
+          
+          <!-- Hazard Category Selector -->
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Location Coordinates</label>
-            <button type="button" onclick="detectUserLocation()" class="w-full mb-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 py-2 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition">
-              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Hazard Category</label>
+            <select id="categoryInput" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-700 transition-all duration-200 cursor-pointer">
+              <option value="Road Surface (Pothole / Sinkhole / Crack)">🕳️ Road Surface (Pothole / Sinkhole / Crack)</option>
+              <option value="Fallen Tree / Hanging Branch Obstruction">🌳 Fallen Tree / Hanging Branch Obstruction</option>
+              <option value="Open Manhole / Missing Drain Grate">⚠️ Open Manhole / Missing Drain Grate</option>
+              <option value="Traffic Light / Street Light Outage">🚦 Traffic Light / Street Light Outage</option>
+              <option value="Illegal Waste Dumping / Blocked Drainage">🗑️ Illegal Waste Dumping / Blocked Drainage</option>
+              <option value="General Roadside Hazard">🚧 General Roadside Hazard / Infrastructure</option>
+            </select>
+          </div>
+
+          <!-- GPS Location Coordinates -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">GPS Location</label>
+            <button type="button" onclick="detectUserLocation()" class="w-full mb-2 bg-blue-50 hover:bg-blue-100 active:scale-[0.98] text-blue-700 border border-blue-200 py-2 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all duration-200 cursor-pointer shadow-sm">
+              <svg class="w-4 h-4 text-blue-600 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
               <span>Auto-Detect Current GPS</span>
             </button>
             <div class="grid grid-cols-2 gap-2">
-              <input type="number" step="any" id="latInput" placeholder="Latitude" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-blue-500" />
-              <input type="number" step="any" id="lngInput" placeholder="Longitude" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-blue-500" />
+              <input type="number" step="any" id="latInput" placeholder="Latitude" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" />
+              <input type="number" step="any" id="lngInput" placeholder="Longitude" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" />
             </div>
-            <p class="text-[11px] text-slate-400 mt-1">Or click anywhere on the map to drop a pin.</p>
+            <p class="text-[11px] text-slate-400 mt-1">Or click anywhere on the map to pin.</p>
           </div>
 
-          <!-- Camera Upload with Live Preview -->
+          <!-- Click / Drag & Drop Photo Upload -->
           <div>
             <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Incident Photograph</label>
-            <input type="file" id="imageInput" accept="image/*" required class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer" />
             
-            <!-- Live Image Preview Container -->
-            <div id="imagePreviewContainer" class="hidden mt-2 relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 h-36">
-              <img id="imagePreview" src="" alt="Incident Preview" class="w-full h-full object-cover" />
-              <span class="absolute bottom-1.5 right-1.5 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-md backdrop-blur-sm">Image Staged</span>
+            <div 
+              id="dropZone" 
+              onclick="document.getElementById('imageInput').click()" 
+              class="relative border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50/80 hover:bg-blue-50/40 rounded-2xl p-4 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[130px] group shadow-inner"
+            >
+              <input type="file" id="imageInput" accept="image/*" required class="hidden" />
+
+              <div id="dropPrompt" class="flex flex-col items-center transition-all duration-200">
+                <svg class="w-8 h-8 text-slate-400 group-hover:text-blue-500 group-hover:scale-110 mb-1.5 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <p class="text-xs font-semibold text-slate-700 group-hover:text-blue-700 transition-colors duration-200">Click to browse or drag & drop photo</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">JPG, PNG, or WEBP up to 10MB</p>
+              </div>
+
+              <div id="imagePreviewContainer" class="hidden w-full h-36 relative rounded-xl overflow-hidden border border-slate-200 transition-all duration-300">
+                <img id="imagePreview" src="" alt="Incident Preview" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                <span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-md backdrop-blur-sm transition-opacity">
+                  Click / Drop to Change
+                </span>
+              </div>
             </div>
           </div>
 
-          <!-- Remarks -->
+          <!-- Description / Remarks -->
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Description / Remarks</label>
-            <textarea id="notesInput" rows="2" placeholder="e.g., Deep pothole near pedestrian crossing" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-blue-500"></textarea>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Remarks</label>
+            <textarea id="notesInput" rows="2" placeholder="e.g., Deep pothole along left lane after rain" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"></textarea>
           </div>
 
-          <!-- Submit Button -->
-          <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-xs shadow-sm transition flex items-center justify-center space-x-2">
-            <span>Submit to AI Verification</span>
+          <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold py-2.5 rounded-xl text-xs shadow-sm hover:shadow transition-all duration-200 cursor-pointer">
+            Submit for AI Verification
           </button>
         </form>
 
-        <!-- Dynamic Result Banner -->
-        <div id="feedbackBanner" class="hidden mt-4 p-3 rounded-xl text-xs font-medium border"></div>
+        <div id="feedbackBanner" class="hidden mt-4 p-3 rounded-xl text-xs font-medium border view-transition"></div>
       </div>
 
-      <!-- Live Split Interactive Map -->
-      <div class="lg:col-span-8 bg-white p-2 rounded-2xl shadow-sm border border-slate-200 relative min-h-[460px] flex flex-col">
-        <div class="flex justify-between items-center px-3 py-2 border-b border-slate-100">
+      <!-- Interactive Map Window -->
+      <div class="lg:col-span-8 bg-white p-2 rounded-2xl shadow-sm hover:shadow-md border border-slate-200/90 relative min-h-[460px] flex flex-col transition-all duration-300">
+        <div class="flex flex-wrap justify-between items-center px-3 py-2 border-b border-slate-100 gap-2">
+          
           <div class="flex items-center space-x-2">
-            <span class="font-bold text-xs uppercase tracking-wider text-slate-700">Live Spatial Grid</span>
-            <span id="mapReportCountBadge" class="bg-blue-100 text-blue-800 text-[10px] font-semibold px-2 py-0.5 rounded-full">0 Reports</span>
+            <span class="font-bold text-xs uppercase tracking-wider text-slate-700">Live Spatial Map</span>
+            <span id="mapReportCountBadge" class="bg-blue-100 text-blue-800 text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all duration-300">0 Reports</span>
           </div>
 
           <!-- Severity Legend -->
           <div class="flex items-center space-x-3 text-[11px] text-slate-500">
-            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-rose-500 mr-1"></span>Critical</span>
-            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Medium</span>
-            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>Low</span>
+            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-rose-500 mr-1 animate-ping inline-flex opacity-75"></span><span class="w-2 h-2 rounded-full bg-rose-500 mr-1.5 -ml-3"></span>Critical</span>
+            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>Medium</span>
+            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>Low</span>
           </div>
+
         </div>
-        <div id="map" class="w-full flex-1 rounded-xl z-0" style="min-height: 440px;"></div>
+
+        <div id="map" class="w-full flex-1 rounded-xl z-0 transition-opacity duration-300" style="min-height: 440px;"></div>
       </div>
+
     </div>
 
-    <!-- VIEW 2: FULLSCREEN MAP VIEW -->
-    <div id="view-map" class="hidden bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
-      <div id="map-full" class="w-full rounded-xl" style="height: 75vh;"></div>
+    <!-- VIEW 2: CITIZEN "MY REPORTS" HISTORY -->
+    <div id="view-myreports" class="hidden max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-sm hover:shadow-md border border-slate-200/90 transition-all duration-300">
+      <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">My Incident Submissions</h2>
+          <p class="text-xs text-slate-500" id="myReportsSubtitle">Showing reports saved for current user.</p>
+        </div>
+        <span id="myReportCountBadge" class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded-full transition-all duration-200">0 Reports</span>
+      </div>
+      <div id="myReportsList" class="space-y-3"></div>
     </div>
 
-    <!-- VIEW 3: CITIZEN TICKET TRACKER -->
-    <div id="view-track" class="hidden max-w-2xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200">
+    <!-- VIEW 3: PUBLIC TICKET TRACKER -->
+    <div id="view-track" class="hidden max-w-xl mx-auto bg-white p-6 rounded-2xl shadow-sm hover:shadow-md border border-slate-200/90 transition-all duration-300">
       <div class="text-center mb-6">
-        <h2 class="text-xl font-bold text-slate-900">Track Incident Progress</h2>
-        <p class="text-xs text-slate-500 mt-1">Enter your municipal ticket reference ID to check repair milestones.</p>
+        <h2 class="text-base font-bold text-slate-900">Track Hazard Milestone</h2>
+        <p class="text-xs text-slate-500 mt-1">Enter a ticket code to view contractor repair progress.</p>
       </div>
-
       <div class="flex space-x-2 mb-6">
-        <input type="text" id="trackInput" placeholder="Enter Ticket Code (e.g. REP-8F12B0)" class="flex-1 text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-blue-500 uppercase tracking-wider" />
-        <button onclick="trackTicket()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 rounded-xl text-sm transition">
-          Track
-        </button>
+        <input type="text" id="trackInput" placeholder="Enter Ticket Code (e.g. REP-8F12B0)" class="flex-1 text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase font-mono transition-all duration-200" />
+        <button onclick="trackTicket()" class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-semibold px-4 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">Track</button>
       </div>
-
-      <div id="trackResult" class="hidden space-y-6 pt-4 border-t border-slate-100"></div>
+      <div id="trackResult" class="hidden space-y-4 pt-4 border-t border-slate-100"></div>
     </div>
 
-    <!-- VIEW 4: MUNICIPAL OFFICER / ADMIN COMMAND PORTAL -->
+    <!-- VIEW 4: MUNICIPAL ADMIN COMMAND PORTAL -->
     <div id="view-admin" class="hidden space-y-6">
       
-      <!-- Admin Login Gate -->
-      <div id="adminLoginGate" class="max-w-md mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 text-center">
-        <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 font-bold text-xl">
-          🔒
+      <!-- Live KPI Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow transition-all duration-200">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Open Tickets</p>
+          <p id="kpiTotal" class="text-2xl font-black text-slate-900 mt-1">0</p>
         </div>
-        <h2 class="text-lg font-bold text-slate-900">Municipal Authority Portal</h2>
-        <p class="text-xs text-slate-500 mt-1 mb-4">Restricted access for City Council Engineers & Road Contractors (DBKL / JKR).</p>
-        
-        <input type="password" id="adminPasscode" placeholder="Enter Officer PIN (dbkl2026)" class="w-full text-center text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl mb-3 focus:outline-blue-500 font-mono tracking-widest" />
-        <button onclick="verifyAdminPasscode()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-xl text-xs transition">
-          Authorize Dashboard Access
-        </button>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow transition-all duration-200">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-rose-500">Critical Priority</p>
+          <p id="kpiCritical" class="text-2xl font-black text-rose-600 mt-1">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow transition-all duration-200">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-500">10m Duplicates Merged</p>
+          <p id="kpiDuplicates" class="text-2xl font-black text-blue-600 mt-1">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow transition-all duration-200">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-500">Resolved Work Orders</p>
+          <p id="kpiResolved" class="text-2xl font-black text-emerald-600 mt-1">0</p>
+        </div>
       </div>
 
-      <!-- Authenticated Admin Operations Center -->
-      <div id="adminDashboardContent" class="hidden space-y-6">
-        
-        <!-- Live KPI Stats Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Open Tickets</p>
-            <p id="kpiTotal" class="text-2xl font-black text-slate-900 mt-1">0</p>
+      <!-- Incident Operations Table -->
+      <div class="bg-white rounded-2xl shadow-sm hover:shadow-md border border-slate-200 overflow-hidden transition-all duration-300">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Contractor Dispatch Operations</h3>
+            <p class="text-xs text-slate-500">Authorized status modifications (DBKL / JKR road engineers).</p>
           </div>
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-rose-500">Critical Priority</p>
-            <p id="kpiCritical" class="text-2xl font-black text-rose-600 mt-1">0</p>
-          </div>
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-500">10m Duplicates Merged</p>
-            <p id="kpiDuplicates" class="text-2xl font-black text-blue-600 mt-1">0</p>
-          </div>
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-500">Resolved Hazards</p>
-            <p id="kpiResolved" class="text-2xl font-black text-emerald-600 mt-1">0</p>
-          </div>
+          <button onclick="loadAdminReports()" class="text-xs bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition-all duration-200 cursor-pointer shadow-sm">Refresh</button>
         </div>
-
-        <!-- Municipal Incident Work-Order Table -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div class="p-4 border-b border-slate-100 flex justify-between items-center">
-            <div>
-              <h3 class="text-sm font-bold text-slate-900">Incident Triage & Contractor Dispatch</h3>
-              <p class="text-xs text-slate-500">Modify live ticket statuses to mobilize field maintenance crews.</p>
-            </div>
-            <button onclick="loadAdminReports()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
-              Refresh Data
-            </button>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-              <thead class="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200">
-                <tr>
-                  <th class="py-3 px-4">Ticket ID</th>
-                  <th class="py-3 px-4">AI Classification</th>
-                  <th class="py-3 px-4">Severity</th>
-                  <th class="py-3 px-4">Coordinates</th>
-                  <th class="py-3 px-4">Duplicates</th>
-                  <th class="py-3 px-4">Current Status</th>
-                  <th class="py-3 px-4 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody id="adminTableBody" class="divide-y divide-slate-100 text-slate-700">
-                <!-- Dynamically generated rows -->
-              </tbody>
-            </table>
-          </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-4">Ticket</th>
+                <th class="py-3 px-4">Reported By</th>
+                <th class="py-3 px-4">Hazard Category</th>
+                <th class="py-3 px-4">Severity</th>
+                <th class="py-3 px-4">Duplicates</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4 text-right">Update Status</th>
+              </tr>
+            </thead>
+            <tbody id="adminTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+          </table>
         </div>
-
       </div>
 
     </div>
 
   </main>
 
-  <!-- Application Logic -->
   <script>
+    let currentUser = null;
     let map, splitMapMarker, activeReports = [];
+    let markersLayer = L.layerGroup();
 
-    // Initialize Leaflet Map
+    // DOM Elements for Drag & Drop
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('imageInput');
+    const previewContainer = document.getElementById('imagePreviewContainer');
+    const dropPrompt = document.getElementById('dropPrompt');
+    const imagePreview = document.getElementById('imagePreview');
+
+    // Initialize Map
     function initMap() {
       map = L.map('map').setView([3.1390, 101.6869], 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -240,7 +366,8 @@
         attribution: '© OpenStreetMap contributors'
       }).addTo(map);
 
-      // Map Click Handler to place coordinates
+      markersLayer.addTo(map);
+
       map.on('click', function(e) {
         document.getElementById('latInput').value = e.latlng.lat.toFixed(6);
         document.getElementById('lngInput').value = e.latlng.lng.toFixed(6);
@@ -250,12 +377,9 @@
 
     function placeTempPin(lat, lng) {
       if (splitMapMarker) map.removeLayer(splitMapMarker);
-      splitMapMarker = L.marker([lat, lng]).addTo(map)
-        .bindPopup("<div class='p-2 font-sans text-xs'><b>Selected Point</b><br>Coordinates ready for submission.</div>")
-        .openPopup();
+      splitMapMarker = L.marker([lat, lng]).addTo(map);
     }
 
-    // Single-Tap GPS Geolocation
     function detectUserLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -267,51 +391,194 @@
             map.setView([lat, lng], 15);
             placeTempPin(lat, lng);
           },
-          (err) => alert("GPS auto-detection failed: " + err.message)
+          (err) => alert("GPS detection failed: " + err.message)
         );
-      } else {
-        alert("Geolocation is not supported by your browser.");
       }
     }
 
-    // Pre-Submission Image Preview Handler
-    document.getElementById('imageInput').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (file) {
+    // --- Drag & Drop / Click Preview Logic ---
+    function showFilePreview(file) {
+      if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onload = function(event) {
-          document.getElementById('imagePreview').src = event.target.result;
-          document.getElementById('imagePreviewContainer').classList.remove('hidden');
+        reader.onload = function(e) {
+          imagePreview.src = e.target.result;
+          dropPrompt.classList.add('hidden');
+          previewContainer.classList.remove('hidden');
         };
         reader.readAsDataURL(file);
       }
+    }
+
+    fileInput.addEventListener('change', function(e) {
+      if (e.target.files.length > 0) {
+        showFilePreview(e.target.files[0]);
+      }
     });
 
-    // View Navigation Switcher
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('drag-active');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('drag-active');
+      });
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length > 0) {
+        fileInput.files = files;
+        showFilePreview(files[0]);
+      }
+    });
+
+    // --- Single-Page View Navigation with Smooth Transition ---
     function switchView(viewName) {
-      const views = ['report', 'map', 'track', 'admin'];
+      if (viewName === 'admin' && (!currentUser || currentUser.role !== 'admin')) {
+        alert("Restricted: Municipal Authority account required. Sign in or register as an Admin.");
+        openAuthModal();
+        return;
+      }
+
+      const views = ['report', 'myreports', 'track', 'admin'];
       views.forEach(v => {
-        document.getElementById(`view-${v}`).classList.add('hidden');
+        const el = document.getElementById(`view-${v}`);
+        el.classList.add('hidden');
+        el.classList.remove('view-transition');
+
         const navBtn = document.getElementById(`nav-${v}`);
-        navBtn.classList.remove('bg-blue-600', 'text-white');
+        navBtn.classList.remove('bg-blue-600', 'text-white', 'shadow-sm');
         navBtn.classList.add('text-slate-300');
       });
 
-      document.getElementById(`view-${viewName}`).classList.remove('hidden');
+      const targetEl = document.getElementById(`view-${viewName}`);
+      targetEl.classList.remove('hidden');
+      
+      // Trigger smooth entry reflow
+      void targetEl.offsetWidth;
+      targetEl.classList.add('view-transition');
+
       const activeNav = document.getElementById(`nav-${viewName}`);
-      activeNav.classList.add('bg-blue-600', 'text-white');
+      activeNav.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
       activeNav.classList.remove('text-slate-300');
 
-      if (viewName === 'report') {
-        setTimeout(() => map.invalidateSize(), 200);
-      }
+      if (viewName === 'report') setTimeout(() => map.invalidateSize(), 220);
+      if (viewName === 'myreports') loadMyReports();
       if (viewName === 'admin') {
         loadAdminStats();
         loadAdminReports();
       }
     }
 
-    // Fetch and Plot Incident Pins on Leaflet
+    // --- Modal & Authentication Logic with Smooth Transition ---
+    function openAuthModal() {
+      const modal = document.getElementById('authModal');
+      const card = document.getElementById('authModalCard');
+      modal.classList.remove('hidden');
+      card.classList.add('modal-enter');
+      document.getElementById('authErrorBanner').classList.add('hidden');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.add('hidden');
+      document.getElementById('authModalCard').classList.remove('modal-enter');
+    }
+
+    function switchAuthTab(tab) {
+      document.getElementById('authErrorBanner').classList.add('hidden');
+      if (tab === 'login') {
+        document.getElementById('loginForm').classList.remove('hidden');
+        document.getElementById('registerForm').classList.add('hidden');
+        document.getElementById('tabLoginBtn').className = "flex-1 py-2.5 text-xs font-bold border-b-2 border-blue-600 text-blue-600 transition-all duration-200";
+        document.getElementById('tabRegisterBtn').className = "flex-1 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-all duration-200";
+      } else {
+        document.getElementById('loginForm').classList.add('hidden');
+        document.getElementById('registerForm').classList.remove('hidden');
+        document.getElementById('tabRegisterBtn').className = "flex-1 py-2.5 text-xs font-bold border-b-2 border-emerald-600 text-emerald-600 transition-all duration-200";
+        document.getElementById('tabLoginBtn').className = "flex-1 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-all duration-200";
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+
+      try {
+        const res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Login failed.");
+        setUserSession(data.user);
+        closeAuthModal();
+      } catch (err) {
+        showAuthError(err.message);
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const full_name = document.getElementById('regName').value;
+      const email = document.getElementById('regEmail').value;
+      const password = document.getElementById('regPassword').value;
+      const role = document.getElementById('regRole').value;
+
+      try {
+        const res = await fetch('/api/v1/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, full_name, role })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Registration failed.");
+        alert("Account created in SQL database! Logging you in...");
+        setUserSession(data.user);
+        closeAuthModal();
+      } catch (err) {
+        showAuthError(err.message);
+      }
+    }
+
+    function showAuthError(msg) {
+      const banner = document.getElementById('authErrorBanner');
+      banner.textContent = msg;
+      banner.classList.remove('hidden');
+    }
+
+    function setUserSession(user) {
+      currentUser = user;
+      document.getElementById('userNameDisplay').textContent = `${user.full_name} (${user.role.toUpperCase()})`;
+      
+      const authBtn = document.getElementById('authActionBtn');
+      authBtn.textContent = "Sign Out";
+      // Red button on login with transition
+      authBtn.className = "text-xs bg-rose-600 hover:bg-rose-700 active:scale-95 font-semibold px-3 py-1.5 rounded-lg text-white shadow-sm transition-all duration-200 cursor-pointer";
+      
+      authBtn.onclick = () => {
+        currentUser = null;
+        document.getElementById('userNameDisplay').textContent = "Guest Citizen";
+        authBtn.textContent = "Sign In / Register";
+        // Blue button on sign out with transition
+        authBtn.className = "text-xs bg-blue-600 hover:bg-blue-700 active:scale-95 font-semibold px-3 py-1.5 rounded-lg text-white shadow-sm transition-all duration-200 cursor-pointer";
+        authBtn.onclick = openAuthModal;
+        switchView('report');
+      };
+
+      if (currentUser.role === 'admin') switchView('admin');
+    }
+
+    // --- Load Incident Markers ---
     async function loadReports() {
       try {
         const res = await fetch('/api/v1/reports');
@@ -320,27 +587,18 @@
 
         document.getElementById('mapReportCountBadge').textContent = `${json.count} Reports`;
 
-        // Clear existing markers except temp picker
-        map.eachLayer((layer) => {
-          if (layer instanceof L.CircleMarker) map.removeLayer(layer);
-        });
+        markersLayer.clearLayers();
 
         activeReports.forEach(r => {
-          let markerColor = "#10b981"; // Low (Green)
-          if (r.severity === "Critical") markerColor = "#ef4444"; // Critical (Red)
-          else if (r.severity === "Medium") markerColor = "#f59e0b"; // Medium (Amber)
+          let markerColor = "#10b981";
+          if (r.severity === "Critical") markerColor = "#ef4444";
+          else if (r.severity === "Medium") markerColor = "#f59e0b";
 
           const circle = L.circleMarker([r.latitude, r.longitude], {
-            radius: 8,
-            fillColor: markerColor,
-            color: "#ffffff",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.85
-          }).addTo(map);
+            radius: 8, fillColor: markerColor, color: "#ffffff", weight: 2, fillOpacity: 0.9
+          });
 
-          // Card Popup with AI Bounding Box Annotated Photo
-          const popupContent = `
+          circle.bindPopup(`
             <div class="w-64 font-sans text-xs">
               <img src="${r.image_url}" class="w-full h-32 object-cover" />
               <div class="p-3">
@@ -354,63 +612,95 @@
                 <p class="text-slate-500 text-[11px] mt-1">${r.notes}</p>
                 <div class="mt-2 pt-2 border-t border-slate-100 flex justify-between text-[10px] text-slate-400">
                   <span>Status: <b>${r.status}</b></span>
-                  <span>Verifications: <b>${r.duplicate_count}</b></span>
+                  <span>Duplicates: <b>${r.duplicate_count}</b></span>
                 </div>
               </div>
             </div>
-          `;
-          circle.bindPopup(popupContent);
+          `);
+
+          markersLayer.addLayer(circle);
         });
 
-      } catch (err) {
-        console.error("Error loading reports:", err);
-      }
+      } catch (e) { console.error(e); }
     }
 
-    // Submit Incident Form
+    // --- Submit Defect Report ---
     document.getElementById('incidentForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const submitBtn = document.getElementById('submitBtn');
       const banner = document.getElementById('feedbackBanner');
-      
       submitBtn.disabled = true;
-      submitBtn.innerHTML = "<span>Analyzing Image with YOLOv8...</span>";
+      submitBtn.textContent = "AI Scanning Defect...";
 
       const formData = new FormData();
       formData.append("latitude", document.getElementById('latInput').value);
       formData.append("longitude", document.getElementById('lngInput').value);
+      formData.append("category", document.getElementById('categoryInput').value);
       formData.append("notes", document.getElementById('notesInput').value);
-      formData.append("image", document.getElementById('imageInput').files[0]);
+      formData.append("reported_by", currentUser ? currentUser.email : "anonymous@citizen.my");
+      formData.append("image", fileInput.files[0]);
 
       try {
         const response = await fetch('/api/v1/report', { method: 'POST', body: formData });
         const res = await response.json();
-
-        banner.classList.remove('hidden', 'bg-rose-50', 'text-rose-700', 'border-rose-200', 'bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
-
-        if (res.success) {
-          banner.classList.add('bg-emerald-50', 'text-emerald-800', 'border-emerald-200');
-          banner.innerHTML = `
-            <b>Success!</b> Ticket Created: <b>${res.ticket.report_id}</b><br>
-            AI Assessment: <b>${res.ticket.hazard_type}</b> (${res.ticket.severity} Priority)<br>
-            ${res.is_duplicate ? '📍 Merged with existing report within 10m.' : '✓ Incident plotted on active map.'}
-          `;
-          document.getElementById('incidentForm').reset();
-          document.getElementById('imagePreviewContainer').classList.add('hidden');
-          loadReports();
-        } else {
-          throw new Error(res.message || "Failed to submit.");
-        }
+        banner.className = "mt-4 p-3 rounded-xl text-xs font-medium border bg-emerald-50 text-emerald-800 border-emerald-200 block view-transition shadow-sm";
+        banner.innerHTML = `
+          <b>Success!</b> Ticket: <b>${res.ticket.report_id}</b><br>
+          AI Assessment: <b>${res.ticket.hazard_type}</b> (${res.ticket.severity} Priority)<br>
+          ${res.is_duplicate ? '📍 Merged into duplicate ticket within 10m.' : '✓ Saved to SQL Database & Plotted on Map.'}
+        `;
+        document.getElementById('incidentForm').reset();
+        previewContainer.classList.add('hidden');
+        dropPrompt.classList.remove('hidden');
+        imagePreview.src = "";
+        loadReports();
       } catch (err) {
-        banner.classList.add('bg-rose-50', 'text-rose-700', 'border-rose-200');
-        banner.textContent = "Submission error: " + err.message;
+        banner.className = "mt-4 p-3 rounded-xl text-xs font-medium border bg-rose-50 text-rose-700 border-rose-200 block view-transition shadow-sm";
+        banner.textContent = "Error: " + err.message;
       } finally {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = "<span>Submit to AI Verification</span>";
+        submitBtn.textContent = "Submit for AI Verification";
       }
     });
 
-    // Public Ticket Tracker Logic
+    // --- Citizen Submission History ---
+    async function loadMyReports() {
+      const email = currentUser ? currentUser.email : "anonymous@citizen.my";
+      document.getElementById('myReportsSubtitle').textContent = `Showing incident history for ${email}`;
+      const res = await fetch(`/api/v1/reports?user_email=${encodeURIComponent(email)}`);
+      const json = await res.json();
+      document.getElementById('myReportCountBadge').textContent = `${json.count} Reports`;
+      const list = document.getElementById('myReportsList');
+      list.innerHTML = "";
+
+      if (json.data.length === 0) {
+        list.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No reports registered under ${email} yet.</p>`;
+        return;
+      }
+
+      json.data.forEach(r => {
+        list.innerHTML += `
+          <div class="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl transition-all duration-200 hover:shadow-sm">
+            <div class="flex items-center space-x-3">
+              <img src="${r.image_url}" class="w-12 h-12 object-cover rounded-lg border shadow-inner" />
+              <div>
+                <div class="flex items-center space-x-2">
+                  <span class="font-bold text-slate-900 text-xs font-mono">${r.report_id}</span>
+                  <span class="px-2 py-0.2 rounded text-[10px] font-bold ${
+                    r.severity === 'Critical' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
+                  }">${r.severity}</span>
+                </div>
+                <p class="text-xs font-medium text-slate-700">${r.hazard_type}</p>
+                <p class="text-[11px] text-slate-400">${r.submitted_at}</p>
+              </div>
+            </div>
+            <span class="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-lg border border-blue-200">${r.status}</span>
+          </div>
+        `;
+      });
+    }
+
+    // --- Public Ticket Tracker ---
     async function trackTicket() {
       const code = document.getElementById('trackInput').value.trim();
       const container = document.getElementById('trackResult');
@@ -418,117 +708,89 @@
 
       try {
         const res = await fetch(`/api/v1/report/${code}`);
-        if (!res.ok) throw new Error("Ticket ID not found.");
+        if (!res.ok) throw new Error("Ticket not found in database.");
         const t = await res.json();
-
         const steps = ['Submitted', 'AI Verified', 'Dispatched', 'Resolved'];
         const currentIdx = steps.indexOf(t.status) !== -1 ? steps.indexOf(t.status) : 1;
 
         container.classList.remove('hidden');
+        container.className = "space-y-4 pt-4 border-t border-slate-100 view-transition";
         container.innerHTML = `
-          <div class="flex justify-between items-start bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <div class="flex justify-between items-start bg-slate-50 p-3.5 rounded-xl border border-slate-200 shadow-sm transition-all duration-200">
             <div>
-              <span class="text-xs text-slate-400 font-mono">TICKET #${t.report_id}</span>
-              <h3 class="text-base font-bold text-slate-900">${t.hazard_type}</h3>
-              <p class="text-xs text-slate-500 mt-1">${t.notes}</p>
+              <span class="text-[11px] text-slate-400 font-mono">TICKET #${t.report_id}</span>
+              <h3 class="text-sm font-bold text-slate-900">${t.hazard_type}</h3>
+              <p class="text-xs text-slate-500">${t.notes}</p>
             </div>
-            <img src="${t.image_url}" class="w-16 h-16 rounded-lg object-cover border" />
+            <img src="${t.image_url}" class="w-14 h-14 rounded-lg object-cover border shadow-inner" />
           </div>
-
-          <!-- Progress Stepper -->
           <div class="grid grid-cols-4 gap-2 pt-2">
             ${steps.map((s, idx) => `
-              <div class="text-center">
-                <div class="w-8 h-8 mx-auto rounded-full flex items-center justify-center text-xs font-bold ${
-                  idx <= currentIdx ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
-                }">
-                  ${idx <= currentIdx ? '✓' : idx + 1}
-                </div>
-                <p class="text-[11px] font-semibold mt-1.5 ${idx <= currentIdx ? 'text-blue-600' : 'text-slate-400'}">${s}</p>
+              <div class="text-center group">
+                <div class="w-7 h-7 mx-auto rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${                   idx <= currentIdx ? 'bg-blue-600 text-white shadow-sm scale-105' : 'bg-slate-200 text-slate-500'                 }">${idx <= currentIdx ? '✓' : idx + 1}</div>
+                <p class="text-[10px] font-semibold mt-1 transition-colors duration-200 ${idx <= currentIdx ? 'text-blue-600' : 'text-slate-400'}">${s}</p>
               </div>
             `).join('')}
           </div>
         `;
       } catch (err) {
         container.classList.remove('hidden');
-        container.innerHTML = `<p class="text-rose-600 text-xs font-semibold text-center">${err.message}</p>`;
+        container.className = "space-y-4 pt-4 border-t border-slate-100 view-transition";
+        container.innerHTML = `<p class="text-rose-600 text-xs text-center font-semibold">${err.message}</p>`;
       }
     }
 
-    // Council Admin Portal Passcode Gate
-    function verifyAdminPasscode() {
-      const pin = document.getElementById('adminPasscode').value.trim();
-      if (pin === "dbkl2026" || pin === "admin123") {
-        document.getElementById('adminLoginGate').classList.add('hidden');
-        document.getElementById('adminDashboardContent').classList.remove('hidden');
-        loadAdminStats();
-        loadAdminReports();
-      } else {
-        alert("Invalid Passcode. Enter: dbkl2026 or admin123");
-      }
-    }
-
+    // --- Municipal Operations Handlers ---
     async function loadAdminStats() {
-      try {
-        const res = await fetch('/api/v1/stats');
-        const s = await res.json();
-        document.getElementById('kpiTotal').textContent = s.total_reports;
-        document.getElementById('kpiCritical').textContent = s.critical_count;
-        document.getElementById('kpiDuplicates').textContent = s.duplicates_prevented;
-        document.getElementById('kpiResolved').textContent = s.resolved_count;
-      } catch (e) { console.error(e); }
+      const res = await fetch('/api/v1/stats');
+      const s = await res.json();
+      document.getElementById('kpiTotal').textContent = s.total_reports;
+      document.getElementById('kpiCritical').textContent = s.critical_count;
+      document.getElementById('kpiDuplicates').textContent = s.duplicates_prevented;
+      document.getElementById('kpiResolved').textContent = s.resolved_count;
     }
 
     async function loadAdminReports() {
-      try {
-        const res = await fetch('/api/v1/reports');
-        const json = await res.json();
-        const tbody = document.getElementById('adminTableBody');
-        tbody.innerHTML = "";
+      const res = await fetch('/api/v1/reports');
+      const json = await res.json();
+      const tbody = document.getElementById('adminTableBody');
+      tbody.innerHTML = "";
 
-        json.data.forEach(r => {
-          const tr = document.createElement('tr');
-          tr.className = "hover:bg-slate-50/80 transition";
-          tr.innerHTML = `
-            <td class="py-3 px-4 font-mono font-bold text-slate-900">${r.report_id}</td>
-            <td class="py-3 px-4">${r.hazard_type}</td>
-            <td class="py-3 px-4">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-                r.severity === 'Critical' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
-              }">${r.severity}</span>
-            </td>
-            <td class="py-3 px-4 text-slate-500 font-mono text-[11px]">${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}</td>
-            <td class="py-3 px-4 font-semibold text-blue-600">${r.duplicate_count}</td>
-            <td class="py-3 px-4 font-semibold">${r.status}</td>
-            <td class="py-3 px-4 text-right">
-              <select onchange="updateTicketStatus('${r.report_id}', this.value)" class="text-xs bg-slate-100 border border-slate-300 rounded p-1">
-                <option value="" disabled selected>Update...</option>
-                <option value="AI Verified">AI Verified</option>
-                <option value="Dispatched">Dispatched</option>
-                <option value="Resolved">Resolved</option>
-              </select>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
-      } catch (e) { console.error(e); }
+      json.data.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition-colors duration-150";
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-mono font-bold text-slate-900">${r.report_id}</td>
+          <td class="py-3 px-4 font-mono text-[11px] text-slate-500">${r.reported_by}</td>
+          <td class="py-3 px-4 font-medium">${r.hazard_type}</td>
+          <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+            r.severity === 'Critical' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
+          }">${r.severity}</span></td>
+          <td class="py-3 px-4 font-semibold text-blue-600">${r.duplicate_count}</td>
+          <td class="py-3 px-4 font-semibold">${r.status}</td>
+          <td class="py-3 px-4 text-right">
+            <select onchange="updateTicketStatus('${r.report_id}', this.value)" class="text-xs bg-slate-100 border border-slate-300 rounded p-1 cursor-pointer transition-all duration-200 focus:ring-1 focus:ring-blue-500">
+              <option value="" disabled selected>Update...</option>
+              <option value="AI Verified">AI Verified</option>
+              <option value="Dispatched">Dispatched</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
 
     async function updateTicketStatus(reportId, newStatus) {
-      if (!newStatus) return;
-      try {
-        await fetch(`/api/v1/report/${reportId}/status?new_status=${encodeURIComponent(newStatus)}`, {
-          method: 'PATCH'
-        });
-        loadAdminReports();
-        loadAdminStats();
-        loadReports();
-      } catch (err) {
-        alert("Failed to update status: " + err.message);
-      }
+      if (!newStatus || !currentUser) return;
+      await fetch(`/api/v1/report/${reportId}/status?new_status=${encodeURIComponent(newStatus)}&role=${currentUser.role}`, {
+        method: 'PATCH'
+      });
+      loadAdminReports();
+      loadAdminStats();
+      loadReports();
     }
 
-    // Initialize application on load
     window.onload = () => {
       initMap();
       loadReports();

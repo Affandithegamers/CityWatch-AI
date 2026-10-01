@@ -1,0 +1,9 @@
+Admin:
+affandiadmin123@gmail.com
+Password:
+admin123
+
+User:
+affandi@gmail.com
+Password:
+12345

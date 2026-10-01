@@ -1,0 +1,20 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Python compilation cache
+__pycache__/
+*.pyc
+
+# Local SQLite Database (keeps local test data off GitHub)
+citywatch.db
+
+# Uploaded citizen photos (avoids uploading local images)
+uploads/*
+!uploads/.gitkeep
+
+# Windows and Editor temp files
+.vscode/
+Thumbs.db
+.DS_Store
