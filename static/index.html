@@ -13,69 +13,198 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    .leaflet-popup-content-wrapper { border-radius: 14px; overflow: hidden; padding: 0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+    /* ==========================================================================
+       THEME VARIABLES ENGINE
+       ========================================================================== */
+    :root, body[data-theme="blue"] {
+      --bg-body: #f8fafc;
+      --bg-card: #ffffff;
+      --border-card: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --input-bg: #f8fafc;
+      --input-border: #e2e8f0;
+      --header-bg: #0f172a;
+      --header-border: #1e293b;
+      --nav-pill-bg: #1e293b;
+      --nav-pill-border: #334155;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --accent-soft-border: #bfdbfe;
+      --accent-soft-text: #1d4ed8;
+      --btn-text: #ffffff;
+      --logo-bg: #2563eb;
+    }
+
+    body[data-theme="coffee"] {
+      --bg-body: #FAF6F0;
+      --bg-card: #ffffff;
+      --border-card: #E8DFD1;
+      --text-main: #2E241E;
+      --text-muted: #7A6A5E;
+      --input-bg: #FAF6F0;
+      --input-border: #E2D8CC;
+      --header-bg: #231912;
+      --header-border: #3A2C22;
+      --nav-pill-bg: #1B130E;
+      --nav-pill-border: #33241A;
+      --accent: #8A5A36;
+      --accent-hover: #724828;
+      --accent-soft: #F5EFE6;
+      --accent-soft-border: #E2D4C3;
+      --accent-soft-text: #7A4E2D;
+      --btn-text: #ffffff;
+      --logo-bg: #8A5A36;
+    }
+
+    body[data-theme="charcoal"] {
+      --bg-body: #F4EFEB;
+      --bg-card: #ffffff;
+      --border-card: #E3DBD2;
+      --text-main: #1C1917;
+      --text-muted: #78716C;
+      --input-bg: #F4EFEB;
+      --input-border: #DDD5CC;
+      --header-bg: #1C1917;
+      --header-border: #292524;
+      --nav-pill-bg: #292524;
+      --nav-pill-border: #44403C;
+      --accent: #44403C;
+      --accent-hover: #292524;
+      --accent-soft: #EAE3DA;
+      --accent-soft-border: #D7CDC2;
+      --accent-soft-text: #292524;
+      --btn-text: #ffffff;
+      --logo-bg: #44403C;
+    }
+
+    body[data-theme="sage"] {
+      --bg-body: #F1F5F2;
+      --bg-card: #ffffff;
+      --border-card: #D5E0D7;
+      --text-main: #18281F;
+      --text-muted: #566C5E;
+      --input-bg: #F1F5F2;
+      --input-border: #CFDDD2;
+      --header-bg: #18291F;
+      --header-border: #243B2E;
+      --nav-pill-bg: #111D16;
+      --nav-pill-border: #243B2E;
+      --accent: #2E6A47;
+      --accent-hover: #225136;
+      --accent-soft: #E3EDE5;
+      --accent-soft-border: #C8DDCB;
+      --accent-soft-text: #225136;
+      --btn-text: #ffffff;
+      --logo-bg: #2E6A47;
+    }
+
+    /* Theme Dynamic Class Connectors */
+    body {
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .theme-card {
+      background-color: var(--bg-card) !important;
+      border-color: var(--border-card) !important;
+    }
+
+    .theme-input {
+      background-color: var(--input-bg) !important;
+      border-color: var(--input-border) !important;
+      color: var(--text-main) !important;
+    }
+
+    .theme-header {
+      background-color: var(--header-bg) !important;
+      border-color: var(--header-border) !important;
+    }
+
+    .theme-nav-pill {
+      background-color: var(--nav-pill-bg) !important;
+      border-color: var(--nav-pill-border) !important;
+    }
+
+    .theme-accent-btn {
+      background-color: var(--accent) !important;
+      color: var(--btn-text) !important;
+    }
+
+    .theme-accent-btn:hover {
+      background-color: var(--accent-hover) !important;
+    }
+
+    .theme-soft-badge {
+      background-color: var(--accent-soft) !important;
+      border-color: var(--accent-soft-border) !important;
+      color: var(--accent-soft-text) !important;
+    }
+
+    .theme-logo {
+      background-color: var(--logo-bg) !important;
+    }
+
+    .theme-text-muted {
+      color: var(--text-muted) !important;
+    }
+
+    /* Popups and Animations */
+    .leaflet-popup-content-wrapper { 
+      border-radius: 14px; 
+      overflow: hidden; 
+      padding: 0; 
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15); 
+    }
     .leaflet-popup-content { margin: 0; line-height: 1.4; }
 
-    /* Fluid View Transitions */
     @keyframes viewFadeSlide {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .view-transition {
-      animation: viewFadeSlide 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: viewFadeSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* Modal Pop-In Transition */
     @keyframes modalPopIn {
-      from {
-        opacity: 0;
-        transform: scale(0.94) translateY(12px);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-      }
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
     }
 
     .modal-enter {
       animation: modalPopIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* Smooth Drag & Drop Glow Transition */
     .drag-active {
-      border-color: #3b82f6 !important;
-      background-color: #eff6ff !important;
+      border-color: var(--accent) !important;
+      background-color: var(--accent-soft) !important;
       transform: scale(1.01);
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen font-sans antialiased selection:bg-blue-600 selection:text-white">
+<body data-theme="blue" class="flex flex-col min-h-screen font-sans antialiased selection:bg-slate-700 selection:text-white">
 
-  <!-- Global Header & Navigation Bar -->
-  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50 transition-colors duration-200">
+  <!-- Header & Navigation Bar -->
+  <header class="theme-header text-white shadow-md sticky top-0 z-50 transition-colors duration-300 border-b">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
       
-      <!-- Brand Logo -->
+      <!-- Brand Logo with Cute Tilt Hover -->
       <div class="flex items-center space-x-3 cursor-pointer group" onclick="switchView('report')">
-        <div class="w-8 h-8 rounded-lg bg-blue-600 group-hover:bg-blue-500 group-hover:rotate-3 flex items-center justify-center font-black text-white text-base shadow-sm transition-all duration-300">
+        <div id="cwLogoBadge" class="theme-logo w-8 h-8 rounded-lg group-hover:rotate-3 flex items-center justify-center font-black text-white text-base shadow-sm transition-all duration-300">
           CW
         </div>
         <div>
-          <h1 class="text-base sm:text-lg font-bold tracking-tight group-hover:text-blue-200 transition-colors duration-200">CityWatch AI</h1>
-          <p class="text-[11px] text-slate-400">Intelligent Municipal Hazard Platform</p>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white transition-colors duration-200">CityWatch AI</h1>
+          <p class="text-[11px] text-slate-300/80">Intelligent Municipal Hazard Platform</p>
         </div>
       </div>
 
       <!-- Navigation Tabs -->
-      <nav class="flex items-center bg-slate-800 p-1 rounded-xl text-xs font-semibold shadow-inner">
-        <button id="nav-report" onclick="switchView('report')" class="px-3.5 py-1.5 rounded-lg bg-blue-600 text-white shadow-sm transition-all duration-200 active:scale-95">
+      <nav class="theme-nav-pill flex items-center p-1 rounded-xl text-xs font-semibold shadow-inner border transition-colors duration-300">
+        <button id="nav-report" onclick="switchView('report')" class="px-3.5 py-1.5 rounded-lg theme-accent-btn shadow-sm transition-all duration-200 active:scale-95">
           Report Defect
         </button>
         <button id="nav-myreports" onclick="switchView('myreports')" class="px-3.5 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all duration-200 active:scale-95">
@@ -89,13 +218,26 @@
         </button>
       </nav>
 
-      <!-- User Profile Header Widget -->
+      <!-- User Profile & Theme Setting Widgets -->
       <div class="flex items-center space-x-2">
-        <div id="userBadge" class="bg-slate-800 border border-slate-700/80 px-3 py-1.5 rounded-lg text-xs flex items-center space-x-2 shadow-sm transition-all duration-200">
+        
+        <!-- Theme Settings Button -->
+        <button onclick="openSettingsModal()" class="theme-nav-pill text-xs border hover:opacity-90 active:scale-95 px-2.5 py-1.5 rounded-lg text-slate-200 shadow-sm transition-all duration-200 cursor-pointer flex items-center space-x-1.5" title="Appearance Settings">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          <span class="hidden sm:inline">Theme</span>
+        </button>
+
+        <!-- User Badge -->
+        <div id="userBadge" class="theme-nav-pill border px-3 py-1.5 rounded-lg text-xs flex items-center space-x-2 shadow-sm">
           <span id="userDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span id="userNameDisplay" class="font-medium text-slate-200">Guest Citizen</span>
         </div>
-        <button onclick="openAuthModal()" id="authActionBtn" class="text-xs bg-blue-600 hover:bg-blue-700 active:scale-95 font-semibold px-3 py-1.5 rounded-lg text-white shadow-sm transition-all duration-200 cursor-pointer">
+
+        <!-- Auth Button (Sign In / Red Sign Out) -->
+        <button onclick="openAuthModal()" id="authActionBtn" class="theme-accent-btn text-xs active:scale-95 font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition-all duration-200 cursor-pointer">
           Sign In / Register
         </button>
       </div>
@@ -103,7 +245,96 @@
     </div>
   </header>
 
-  <!-- AUTHENTICATION MODAL (LOGIN & CREATE ACCOUNT) -->
+  <!-- THEME SETTINGS MODAL -->
+  <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
+    <div id="settingsModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 transition-all duration-300">
+      
+      <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Appearance & Theme</h3>
+          <p class="text-xs text-slate-500">Pick an ergonomic palette for your platform session.</p>
+        </div>
+        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold px-2">&times;</button>
+      </div>
+
+      <!-- Theme Selector Grid -->
+      <div class="grid grid-cols-1 gap-2.5">
+        
+        <!-- Theme 1: Blue / Slate (Original) -->
+        <div onclick="setTheme('blue')" id="theme-card-blue" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-blue-500 cursor-pointer transition-all duration-200">
+          <div class="flex items-center space-x-3">
+            <div class="flex -space-x-1">
+              <span class="w-6 h-6 rounded-full bg-slate-900 border-2 border-white shadow-xs"></span>
+              <span class="w-6 h-6 rounded-full bg-blue-600 border-2 border-white shadow-xs"></span>
+              <span class="w-6 h-6 rounded-full bg-slate-100 border-2 border-white shadow-xs"></span>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-slate-800">Civic Blue (Original)</p>
+              <p class="text-[11px] text-slate-400">Classic smart city & municipal authority</p>
+            </div>
+          </div>
+          <span id="check-blue" class="text-xs font-bold text-blue-600">✓ Active</span>
+        </div>
+
+        <!-- Theme 2: Coffee & Vanilla -->
+        <div onclick="setTheme('coffee')" id="theme-card-coffee" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#8A5A36] cursor-pointer transition-all duration-200">
+          <div class="flex items-center space-x-3">
+            <div class="flex -space-x-1">
+              <span class="w-6 h-6 rounded-full bg-[#231912] border-2 border-white shadow-xs"></span>
+              <span class="w-6 h-6 rounded-full bg-[#8A5A36] border-2 border-white shadow-xs"></span>
+              <span class="w-6 h-6 rounded-full bg-[#FAF6F0] border-2 border-white shadow-xs"></span>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-slate-800">Coffee & Vanilla</p>
+              <p class="text-[11px] text-slate-400">Rich espresso, latte foam & warm cream</p>
+            </div>
+          </div>
+          <span id="check-coffee" class="hidden text-xs font-bold text-[#8A5A36]">✓ Active</span>
+        </div>
+
+        <!-- Theme 3: Charcoal on Sand -->
+        <div onclick="setTheme('charcoal')" id="theme-card-charcoal" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#44403C] cursor-pointer transition-all duration-200">
+          <div class="flex items-center space-x-3">
+            <div class="flex -space-x-1">
+              <span class="w-6 h-6 rounded-full bg-[#1C1917] border-2 border-white shadow-xs"></span>
+              <span class="w-6 h-6 rounded-full bg-[#44403C] border-2 border-white shadow-xs"></span>
+              <span class="w-6 h-6 rounded-full bg-[#F4EFEB] border-2 border-white shadow-xs"></span>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-slate-800">Charcoal on Sand / Cream</p>
+              <p class="text-[11px] text-slate-400">Natural stone, linen paper & dark charcoal</p>
+            </div>
+          </div>
+          <span id="check-charcoal" class="hidden text-xs font-bold text-[#44403C]">✓ Active</span>
+        </div>
+
+        <!-- Theme 4: Sage & Forest Green -->
+        <div onclick="setTheme('sage')" id="theme-card-sage" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#2E6A47] cursor-pointer transition-all duration-200">
+          <div class="flex items-center space-x-3">
+            <div class="flex -space-x-1">
+              <span class="w-6 h-6 rounded-full bg-[#18291F] border-2 border-white shadow-xs"></span>
+              <span class="w-6 h-6 rounded-full bg-[#2E6A47] border-2 border-white shadow-xs"></span>
+              <span class="w-6 h-6 rounded-full bg-[#F1F5F2] border-2 border-white shadow-xs"></span>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-slate-800">Sage & Forest Green</p>
+              <p class="text-[11px] text-slate-400">Soft mist, eucalyptus & deep forest pine</p>
+            </div>
+          </div>
+          <span id="check-sage" class="hidden text-xs font-bold text-[#2E6A47]">✓ Active</span>
+        </div>
+
+      </div>
+
+      <div class="mt-5 pt-3 border-t border-slate-100 flex justify-end">
+        <button onclick="closeSettingsModal()" class="theme-accent-btn text-xs font-semibold px-4 py-2 rounded-xl transition-all duration-200">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTHENTICATION MODAL (WITH PASSWORD TOGGLE) -->
   <div id="authModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
     <div id="authModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 transition-all duration-300">
       
@@ -121,13 +352,21 @@
       <form id="loginForm" class="space-y-4" onsubmit="handleLogin(event)">
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
-          <input type="email" id="loginEmail" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" placeholder="name@domain.com" />
+          <input type="email" id="loginEmail" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 transition-all duration-200" placeholder="name@domain.com" />
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
-          <input type="password" id="loginPassword" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" placeholder="••••••••" />
+          <div class="relative">
+            <input type="password" id="loginPassword" required class="w-full text-xs p-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 transition-all duration-200" placeholder="••••••••" />
+            <button type="button" onclick="togglePasswordVisibility('loginPassword', 'eyeIconLogin')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer" aria-label="Toggle password visibility">
+              <svg id="eyeIconLogin" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </button>
+          </div>
         </div>
-        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold py-2.5 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">
+        <button type="submit" class="w-full theme-accent-btn active:scale-[0.98] font-semibold py-2.5 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">
           Sign In
         </button>
       </form>
@@ -136,19 +375,27 @@
       <form id="registerForm" class="hidden space-y-3" onsubmit="handleRegister(event)">
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Full Name</label>
-          <input type="text" id="regName" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" placeholder="e.g. John Doe" />
+          <input type="text" id="regName" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 transition-all duration-200" placeholder="e.g. John Doe" />
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
-          <input type="email" id="regEmail" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" placeholder="e.g. user@gmail.com" />
+          <input type="email" id="regEmail" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 transition-all duration-200" placeholder="e.g. user@gmail.com" />
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
-          <input type="password" id="regPassword" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" placeholder="Create a password" />
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Create Password</label>
+          <div class="relative">
+            <input type="password" id="regPassword" required class="w-full text-xs p-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 transition-all duration-200" placeholder="••••••••" />
+            <button type="button" onclick="togglePasswordVisibility('regPassword', 'eyeIconReg')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer" aria-label="Toggle password visibility">
+              <svg id="eyeIconReg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Account Role</label>
-          <select id="regRole" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 cursor-pointer">
+          <select id="regRole" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 transition-all duration-200 cursor-pointer">
             <option value="citizen">Public Citizen (Report & Track)</option>
             <option value="admin">Municipal Authority (DBKL / Contractor Ops)</option>
           </select>
@@ -162,23 +409,23 @@
     </div>
   </div>
 
-  <!-- Main View Container -->
+  <!-- Main Content Container -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 relative">
 
     <!-- VIEW 1: CITIZEN REPORT FORM & LIVE MAP -->
     <div id="view-report" class="grid grid-cols-1 lg:grid-cols-12 gap-6 view-transition">
       
       <!-- Submission Form Sidebar -->
-      <div class="lg:col-span-4 bg-white p-5 rounded-2xl shadow-sm hover:shadow-md border border-slate-200/90 transition-all duration-300">
-        <h2 class="text-base font-bold text-slate-900 mb-1">Report Public Hazard</h2>
-        <p class="text-xs text-slate-500 mb-4">Multi-hazard AI verification with 10m spatial deduplication.</p>
+      <div class="theme-card lg:col-span-4 p-5 rounded-2xl shadow-sm hover:shadow-md border transition-all duration-300">
+        <h2 class="text-base font-bold mb-1">Report Public Hazard</h2>
+        <p class="theme-text-muted text-xs mb-4">Multi-hazard AI verification with 10m spatial deduplication.</p>
 
         <form id="incidentForm" class="space-y-4">
           
           <!-- Hazard Category Selector -->
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Hazard Category</label>
-            <select id="categoryInput" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-700 transition-all duration-200 cursor-pointer">
+            <label class="block text-xs font-semibold uppercase tracking-wider mb-1">Hazard Category</label>
+            <select id="categoryInput" class="theme-input w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 font-medium transition-all duration-200 cursor-pointer">
               <option value="Road Surface (Pothole / Sinkhole / Crack)">🕳️ Road Surface (Pothole / Sinkhole / Crack)</option>
               <option value="Fallen Tree / Hanging Branch Obstruction">🌳 Fallen Tree / Hanging Branch Obstruction</option>
               <option value="Open Manhole / Missing Drain Grate">⚠️ Open Manhole / Missing Drain Grate</option>
@@ -190,53 +437,53 @@
 
           <!-- GPS Location Coordinates -->
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">GPS Location</label>
-            <button type="button" onclick="detectUserLocation()" class="w-full mb-2 bg-blue-50 hover:bg-blue-100 active:scale-[0.98] text-blue-700 border border-blue-200 py-2 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all duration-200 cursor-pointer shadow-sm">
-              <svg class="w-4 h-4 text-blue-600 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <label class="block text-xs font-semibold uppercase tracking-wider mb-1">GPS Location</label>
+            <button type="button" onclick="detectUserLocation()" class="theme-soft-badge w-full mb-2 active:scale-[0.98] border py-2 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all duration-200 cursor-pointer shadow-xs">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
               <span>Auto-Detect Current GPS</span>
             </button>
             <div class="grid grid-cols-2 gap-2">
-              <input type="number" step="any" id="latInput" placeholder="Latitude" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" />
-              <input type="number" step="any" id="lngInput" placeholder="Longitude" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" />
+              <input type="number" step="any" id="latInput" placeholder="Latitude" required class="theme-input w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 transition-all duration-200" />
+              <input type="number" step="any" id="lngInput" placeholder="Longitude" required class="theme-input w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 transition-all duration-200" />
             </div>
-            <p class="text-[11px] text-slate-400 mt-1">Or click anywhere on the map to pin.</p>
+            <p class="theme-text-muted text-[11px] mt-1">Or click anywhere on the map to pin.</p>
           </div>
 
-          <!-- Click / Drag & Drop Photo Upload -->
+          <!-- Drag & Drop Photo Upload -->
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Incident Photograph</label>
+            <label class="block text-xs font-semibold uppercase tracking-wider mb-1">Incident Photograph</label>
             
             <div 
               id="dropZone" 
               onclick="document.getElementById('imageInput').click()" 
-              class="relative border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50/80 hover:bg-blue-50/40 rounded-2xl p-4 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[130px] group shadow-inner"
+              class="theme-input relative border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[130px] group shadow-inner"
             >
               <input type="file" id="imageInput" accept="image/*" required class="hidden" />
 
               <div id="dropPrompt" class="flex flex-col items-center transition-all duration-200">
-                <svg class="w-8 h-8 text-slate-400 group-hover:text-blue-500 group-hover:scale-110 mb-1.5 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-8 h-8 opacity-60 group-hover:scale-110 mb-1.5 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
-                <p class="text-xs font-semibold text-slate-700 group-hover:text-blue-700 transition-colors duration-200">Click to browse or drag & drop photo</p>
-                <p class="text-[11px] text-slate-400 mt-0.5">JPG, PNG, or WEBP up to 10MB</p>
+                <p class="text-xs font-semibold transition-colors duration-200">Click to browse or drag & drop photo</p>
+                <p class="theme-text-muted text-[11px] mt-0.5">JPG, PNG, or WEBP up to 10MB</p>
               </div>
 
-              <div id="imagePreviewContainer" class="hidden w-full h-36 relative rounded-xl overflow-hidden border border-slate-200 transition-all duration-300">
+              <div id="imagePreviewContainer" class="hidden w-full h-36 relative rounded-xl overflow-hidden border transition-all duration-300">
                 <img id="imagePreview" src="" alt="Incident Preview" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
-                <span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-md backdrop-blur-sm transition-opacity">
+                <span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-md backdrop-blur-sm">
                   Click / Drop to Change
                 </span>
               </div>
             </div>
           </div>
 
-          <!-- Description / Remarks -->
+          <!-- Remarks -->
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Remarks</label>
-            <textarea id="notesInput" rows="2" placeholder="e.g., Deep pothole along left lane after rain" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"></textarea>
+            <label class="block text-xs font-semibold uppercase tracking-wider mb-1">Remarks</label>
+            <textarea id="notesInput" rows="2" placeholder="e.g., Deep pothole along left lane after rain" class="theme-input w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 transition-all duration-200"></textarea>
           </div>
 
-          <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold py-2.5 rounded-xl text-xs shadow-sm hover:shadow transition-all duration-200 cursor-pointer">
+          <button type="submit" id="submitBtn" class="theme-accent-btn w-full active:scale-[0.98] font-semibold py-2.5 rounded-xl text-xs shadow-sm hover:shadow transition-all duration-200 cursor-pointer">
             Submit for AI Verification
           </button>
         </form>
@@ -245,17 +492,17 @@
       </div>
 
       <!-- Interactive Map Window -->
-      <div class="lg:col-span-8 bg-white p-2 rounded-2xl shadow-sm hover:shadow-md border border-slate-200/90 relative min-h-[460px] flex flex-col transition-all duration-300">
-        <div class="flex flex-wrap justify-between items-center px-3 py-2 border-b border-slate-100 gap-2">
+      <div class="theme-card lg:col-span-8 p-2 rounded-2xl shadow-sm hover:shadow-md border relative min-h-[460px] flex flex-col transition-all duration-300">
+        <div class="flex flex-wrap justify-between items-center px-3 py-2 border-b gap-2">
           
           <div class="flex items-center space-x-2">
-            <span class="font-bold text-xs uppercase tracking-wider text-slate-700">Live Spatial Map</span>
-            <span id="mapReportCountBadge" class="bg-blue-100 text-blue-800 text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all duration-300">0 Reports</span>
+            <span class="font-bold text-xs uppercase tracking-wider">Live Spatial Map</span>
+            <span id="mapReportCountBadge" class="theme-soft-badge text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all duration-300">0 Reports</span>
           </div>
 
           <!-- Severity Legend -->
-          <div class="flex items-center space-x-3 text-[11px] text-slate-500">
-            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-rose-500 mr-1 animate-ping inline-flex opacity-75"></span><span class="w-2 h-2 rounded-full bg-rose-500 mr-1.5 -ml-3"></span>Critical</span>
+          <div class="theme-text-muted flex items-center space-x-3 text-[11px]">
+            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-rose-500 mr-1.5"></span>Critical</span>
             <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>Medium</span>
             <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>Low</span>
           </div>
@@ -268,28 +515,28 @@
     </div>
 
     <!-- VIEW 2: CITIZEN "MY REPORTS" HISTORY -->
-    <div id="view-myreports" class="hidden max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-sm hover:shadow-md border border-slate-200/90 transition-all duration-300">
-      <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+    <div id="view-myreports" class="theme-card hidden max-w-4xl mx-auto p-6 rounded-2xl shadow-sm hover:shadow-md border transition-all duration-300">
+      <div class="flex justify-between items-center mb-4 pb-3 border-b">
         <div>
-          <h2 class="text-base font-bold text-slate-900">My Incident Submissions</h2>
-          <p class="text-xs text-slate-500" id="myReportsSubtitle">Showing reports saved for current user.</p>
+          <h2 class="text-base font-bold">My Incident Submissions</h2>
+          <p class="theme-text-muted text-xs" id="myReportsSubtitle">Showing reports saved for current user.</p>
         </div>
-        <span id="myReportCountBadge" class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded-full transition-all duration-200">0 Reports</span>
+        <span id="myReportCountBadge" class="theme-soft-badge border text-xs font-semibold px-2.5 py-1 rounded-full transition-all duration-200">0 Reports</span>
       </div>
       <div id="myReportsList" class="space-y-3"></div>
     </div>
 
     <!-- VIEW 3: PUBLIC TICKET TRACKER -->
-    <div id="view-track" class="hidden max-w-xl mx-auto bg-white p-6 rounded-2xl shadow-sm hover:shadow-md border border-slate-200/90 transition-all duration-300">
+    <div id="view-track" class="theme-card hidden max-w-xl mx-auto p-6 rounded-2xl shadow-sm hover:shadow-md border transition-all duration-300">
       <div class="text-center mb-6">
-        <h2 class="text-base font-bold text-slate-900">Track Hazard Milestone</h2>
-        <p class="text-xs text-slate-500 mt-1">Enter a ticket code to view contractor repair progress.</p>
+        <h2 class="text-base font-bold">Track Hazard Milestone</h2>
+        <p class="theme-text-muted text-xs mt-1">Enter a ticket code to view contractor repair progress.</p>
       </div>
       <div class="flex space-x-2 mb-6">
-        <input type="text" id="trackInput" placeholder="Enter Ticket Code (e.g. REP-8F12B0)" class="flex-1 text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase font-mono transition-all duration-200" />
-        <button onclick="trackTicket()" class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-semibold px-4 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">Track</button>
+        <input type="text" id="trackInput" placeholder="Enter Ticket Code (e.g. REP-8F12B0)" class="theme-input flex-1 text-xs p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-400 uppercase font-mono transition-all duration-200" />
+        <button onclick="trackTicket()" class="theme-accent-btn active:scale-95 font-semibold px-5 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">Track</button>
       </div>
-      <div id="trackResult" class="hidden space-y-4 pt-4 border-t border-slate-100"></div>
+      <div id="trackResult" class="hidden space-y-4 pt-4 border-t"></div>
     </div>
 
     <!-- VIEW 4: MUNICIPAL ADMIN COMMAND PORTAL -->
@@ -297,36 +544,36 @@
       
       <!-- Live KPI Cards -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow transition-all duration-200">
-          <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Open Tickets</p>
-          <p id="kpiTotal" class="text-2xl font-black text-slate-900 mt-1">0</p>
+        <div class="theme-card p-4 rounded-xl border shadow-sm hover:shadow transition-all duration-200">
+          <p class="theme-text-muted text-[11px] font-semibold uppercase tracking-wider">Total Open Tickets</p>
+          <p id="kpiTotal" class="text-2xl font-black mt-1">0</p>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow transition-all duration-200">
+        <div class="theme-card p-4 rounded-xl border shadow-sm hover:shadow transition-all duration-200">
           <p class="text-[11px] font-semibold uppercase tracking-wider text-rose-500">Critical Priority</p>
           <p id="kpiCritical" class="text-2xl font-black text-rose-600 mt-1">0</p>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow transition-all duration-200">
+        <div class="theme-card p-4 rounded-xl border shadow-sm hover:shadow transition-all duration-200">
           <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-500">10m Duplicates Merged</p>
           <p id="kpiDuplicates" class="text-2xl font-black text-blue-600 mt-1">0</p>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow transition-all duration-200">
+        <div class="theme-card p-4 rounded-xl border shadow-sm hover:shadow transition-all duration-200">
           <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-500">Resolved Work Orders</p>
           <p id="kpiResolved" class="text-2xl font-black text-emerald-600 mt-1">0</p>
         </div>
       </div>
 
       <!-- Incident Operations Table -->
-      <div class="bg-white rounded-2xl shadow-sm hover:shadow-md border border-slate-200 overflow-hidden transition-all duration-300">
-        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+      <div class="theme-card rounded-2xl shadow-sm hover:shadow-md border overflow-hidden transition-all duration-300">
+        <div class="p-4 border-b flex justify-between items-center opacity-95">
           <div>
-            <h3 class="text-sm font-bold text-slate-900">Contractor Dispatch Operations</h3>
-            <p class="text-xs text-slate-500">Authorized status modifications (DBKL / JKR road engineers).</p>
+            <h3 class="text-sm font-bold">Contractor Dispatch Operations</h3>
+            <p class="theme-text-muted text-xs">Authorized status modifications (DBKL / JKR road engineers).</p>
           </div>
-          <button onclick="loadAdminReports()" class="text-xs bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition-all duration-200 cursor-pointer shadow-sm">Refresh</button>
+          <button onclick="loadAdminReports()" class="theme-soft-badge border text-xs active:scale-95 px-3 py-1.5 rounded-lg font-medium transition-all duration-200 cursor-pointer shadow-xs">Refresh</button>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
-            <thead class="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200">
+            <thead class="border-b uppercase font-semibold opacity-75">
               <tr>
                 <th class="py-3 px-4">Ticket</th>
                 <th class="py-3 px-4">Reported By</th>
@@ -337,7 +584,7 @@
                 <th class="py-3 px-4 text-right">Update Status</th>
               </tr>
             </thead>
-            <tbody id="adminTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+            <tbody id="adminTableBody" class="divide-y opacity-90"></tbody>
           </table>
         </div>
       </div>
@@ -348,6 +595,7 @@
 
   <script>
     let currentUser = null;
+    let currentTheme = 'blue';
     let map, splitMapMarker, activeReports = [];
     let markersLayer = L.layerGroup();
 
@@ -358,7 +606,69 @@
     const dropPrompt = document.getElementById('dropPrompt');
     const imagePreview = document.getElementById('imagePreview');
 
-    // Initialize Map
+    // =========================================================================
+    // THEME ENGINE
+    // =========================================================================
+    function setTheme(themeName) {
+      currentTheme = themeName;
+      document.body.setAttribute('data-theme', themeName);
+      localStorage.setItem('cw_theme', themeName);
+
+      // Update checks and card borders in settings modal
+      ['blue', 'coffee', 'charcoal', 'sage'].forEach(t => {
+        const card = document.getElementById(`theme-card-${t}`);
+        const check = document.getElementById(`check-${t}`);
+        if (t === themeName) {
+          card.classList.add('border-blue-600', 'bg-slate-50/50');
+          check.classList.remove('hidden');
+        } else {
+          card.classList.remove('border-blue-600', 'bg-slate-50/50');
+          check.classList.add('hidden');
+        }
+      });
+    }
+
+    function initTheme() {
+      const savedTheme = localStorage.getItem('cw_theme') || 'blue';
+      setTheme(savedTheme);
+    }
+
+    function openSettingsModal() {
+      const modal = document.getElementById('settingsModal');
+      const card = document.getElementById('settingsModalCard');
+      modal.classList.remove('hidden');
+      card.classList.add('modal-enter');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.add('hidden');
+      document.getElementById('settingsModalCard').classList.remove('modal-enter');
+    }
+
+    // =========================================================================
+    // PASSWORD VISIBILITY TOGGLE
+    // =========================================================================
+    function togglePasswordVisibility(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.innerHTML = `
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/>
+        `;
+      } else {
+        input.type = 'password';
+        icon.innerHTML = `
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        `;
+      }
+    }
+
+    // =========================================================================
+    // LEAFLET MAP
+    // =========================================================================
     function initMap() {
       map = L.map('map').setView([3.1390, 101.6869], 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -396,7 +706,9 @@
       }
     }
 
-    // --- Drag & Drop / Click Preview Logic ---
+    // =========================================================================
+    // DRAG & DROP PHOTO UPLOAD
+    // =========================================================================
     function showFilePreview(file) {
       if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
@@ -440,7 +752,9 @@
       }
     });
 
-    // --- Single-Page View Navigation with Smooth Transition ---
+    // =========================================================================
+    // VIEW SWITCHING (SPA)
+    // =========================================================================
     function switchView(viewName) {
       if (viewName === 'admin' && (!currentUser || currentUser.role !== 'admin')) {
         alert("Restricted: Municipal Authority account required. Sign in or register as an Admin.");
@@ -455,19 +769,18 @@
         el.classList.remove('view-transition');
 
         const navBtn = document.getElementById(`nav-${v}`);
-        navBtn.classList.remove('bg-blue-600', 'text-white', 'shadow-sm');
+        navBtn.classList.remove('theme-accent-btn', 'text-white', 'shadow-sm');
         navBtn.classList.add('text-slate-300');
       });
 
       const targetEl = document.getElementById(`view-${viewName}`);
       targetEl.classList.remove('hidden');
       
-      // Trigger smooth entry reflow
-      void targetEl.offsetWidth;
+      void targetEl.offsetWidth; // trigger transition reflow
       targetEl.classList.add('view-transition');
 
       const activeNav = document.getElementById(`nav-${viewName}`);
-      activeNav.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
+      activeNav.classList.add('theme-accent-btn', 'text-white', 'shadow-sm');
       activeNav.classList.remove('text-slate-300');
 
       if (viewName === 'report') setTimeout(() => map.invalidateSize(), 220);
@@ -478,7 +791,9 @@
       }
     }
 
-    // --- Modal & Authentication Logic with Smooth Transition ---
+    // =========================================================================
+    // AUTHENTICATION & SESSION PERSISTENCE
+    // =========================================================================
     function openAuthModal() {
       const modal = document.getElementById('authModal');
       const card = document.getElementById('authModalCard');
@@ -558,49 +873,33 @@
 
     function setUserSession(user) {
       currentUser = user;
-
-        if (user) {
-                localStorage.setItem('cw_user', JSON.stringify(user));
-                document.getElementById('userNameDisplay').textContent = `${user.full_name} (${user.role.toUpperCase()})`;
-                
-                const authBtn = document.getElementById('authActionBtn');
-                authBtn.textContent = "Sign Out";
-                authBtn.className = "text-xs bg-rose-600 hover:bg-rose-700 active:scale-95 font-semibold px-3 py-1.5 rounded-lg text-white shadow-sm transition-all duration-200 cursor-pointer";
-                
-                authBtn.onclick = () => {
-                localStorage.removeItem('cw_user'); // Clear saved session
-                currentUser = null;
-                document.getElementById('userNameDisplay').textContent = "Guest Citizen";
-                authBtn.textContent = "Sign In / Register";
-                authBtn.className = "text-xs bg-blue-600 hover:bg-blue-700 active:scale-95 font-semibold px-3 py-1.5 rounded-lg text-white shadow-sm transition-all duration-200 cursor-pointer";
-                authBtn.onclick = openAuthModal;
-                switchView('report');
-                };
-
-                if (currentUser.role === 'admin') switchView('admin');
-            }
-
-      document.getElementById('userNameDisplay').textContent = `${user.full_name} (${user.role.toUpperCase()})`;
       
-      const authBtn = document.getElementById('authActionBtn');
-      authBtn.textContent = "Sign Out";
-      // Red button on login with transition
-      authBtn.className = "text-xs bg-rose-600 hover:bg-rose-700 active:scale-95 font-semibold px-3 py-1.5 rounded-lg text-white shadow-sm transition-all duration-200 cursor-pointer";
-      
-      authBtn.onclick = () => {
-        currentUser = null;
-        document.getElementById('userNameDisplay').textContent = "Guest Citizen";
-        authBtn.textContent = "Sign In / Register";
-        // Blue button on sign out with transition
-        authBtn.className = "text-xs bg-blue-600 hover:bg-blue-700 active:scale-95 font-semibold px-3 py-1.5 rounded-lg text-white shadow-sm transition-all duration-200 cursor-pointer";
-        authBtn.onclick = openAuthModal;
-        switchView('report');
-      };
+      if (user) {
+        localStorage.setItem('cw_user', JSON.stringify(user));
+        document.getElementById('userNameDisplay').textContent = `${user.full_name} (${user.role.toUpperCase()})`;
+        
+        const authBtn = document.getElementById('authActionBtn');
+        authBtn.textContent = "Sign Out";
+        // Distinct Red button when logged in
+        authBtn.className = "text-xs bg-rose-600 hover:bg-rose-700 active:scale-95 font-semibold px-3.5 py-1.5 rounded-lg text-white shadow-sm transition-all duration-200 cursor-pointer";
+        
+        authBtn.onclick = () => {
+          localStorage.removeItem('cw_user');
+          currentUser = null;
+          document.getElementById('userNameDisplay').textContent = "Guest Citizen";
+          authBtn.textContent = "Sign In / Register";
+          authBtn.className = "theme-accent-btn text-xs active:scale-95 font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition-all duration-200 cursor-pointer";
+          authBtn.onclick = openAuthModal;
+          switchView('report');
+        };
 
-      if (currentUser.role === 'admin') switchView('admin');
+        if (currentUser.role === 'admin') switchView('admin');
+      }
     }
 
-    // --- Load Incident Markers ---
+    // =========================================================================
+    // INCIDENT REPORTING & PIPELINE
+    // =========================================================================
     async function loadReports() {
       try {
         const res = await fetch('/api/v1/reports');
@@ -625,12 +924,12 @@
               <img src="${r.image_url}" class="w-full h-32 object-cover" />
               <div class="p-3">
                 <div class="flex justify-between items-center mb-1">
-                  <span class="font-bold text-slate-800">${r.report_id}</span>
+                  <span class="font-bold text-slate-900">${r.report_id}</span>
                   <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-                    r.severity === 'Critical' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
+                    r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
                   }">${r.severity}</span>
                 </div>
-                <p class="font-semibold text-slate-700">${r.hazard_type}</p>
+                <p class="font-semibold text-slate-800">${r.hazard_type}</p>
                 <p class="text-slate-500 text-[11px] mt-1">${r.notes}</p>
                 <div class="mt-2 pt-2 border-t border-slate-100 flex justify-between text-[10px] text-slate-400">
                   <span>Status: <b>${r.status}</b></span>
@@ -646,7 +945,6 @@
       } catch (e) { console.error(e); }
     }
 
-    // --- Submit Defect Report ---
     document.getElementById('incidentForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const submitBtn = document.getElementById('submitBtn');
@@ -685,7 +983,9 @@
       }
     });
 
-    // --- Citizen Submission History ---
+    // =========================================================================
+    // CITIZEN HISTORY & TRACKER
+    // =========================================================================
     async function loadMyReports() {
       const email = currentUser ? currentUser.email : "anonymous@citizen.my";
       document.getElementById('myReportsSubtitle').textContent = `Showing incident history for ${email}`;
@@ -696,33 +996,32 @@
       list.innerHTML = "";
 
       if (json.data.length === 0) {
-        list.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No reports registered under ${email} yet.</p>`;
+        list.innerHTML = `<p class="theme-text-muted text-xs text-center py-6">No reports registered under ${email} yet.</p>`;
         return;
       }
 
       json.data.forEach(r => {
         list.innerHTML += `
-          <div class="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl transition-all duration-200 hover:shadow-sm">
+          <div class="theme-card flex items-center justify-between p-3.5 border rounded-xl transition-all duration-200 hover:shadow-xs">
             <div class="flex items-center space-x-3">
               <img src="${r.image_url}" class="w-12 h-12 object-cover rounded-lg border shadow-inner" />
               <div>
                 <div class="flex items-center space-x-2">
-                  <span class="font-bold text-slate-900 text-xs font-mono">${r.report_id}</span>
+                  <span class="font-bold text-xs font-mono">${r.report_id}</span>
                   <span class="px-2 py-0.2 rounded text-[10px] font-bold ${
-                    r.severity === 'Critical' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
+                    r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
                   }">${r.severity}</span>
                 </div>
-                <p class="text-xs font-medium text-slate-700">${r.hazard_type}</p>
-                <p class="text-[11px] text-slate-400">${r.submitted_at}</p>
+                <p class="text-xs font-medium">${r.hazard_type}</p>
+                <p class="theme-text-muted text-[11px]">${r.submitted_at}</p>
               </div>
             </div>
-            <span class="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-lg border border-blue-200">${r.status}</span>
+            <span class="theme-soft-badge text-xs font-bold px-3 py-1 rounded-lg border">${r.status}</span>
           </div>
         `;
       });
     }
 
-    // --- Public Ticket Tracker ---
     async function trackTicket() {
       const code = document.getElementById('trackInput').value.trim();
       const container = document.getElementById('trackResult');
@@ -736,33 +1035,35 @@
         const currentIdx = steps.indexOf(t.status) !== -1 ? steps.indexOf(t.status) : 1;
 
         container.classList.remove('hidden');
-        container.className = "space-y-4 pt-4 border-t border-slate-100 view-transition";
+        container.className = "space-y-4 pt-4 border-t view-transition";
         container.innerHTML = `
-          <div class="flex justify-between items-start bg-slate-50 p-3.5 rounded-xl border border-slate-200 shadow-sm transition-all duration-200">
+          <div class="theme-card flex justify-between items-start p-3.5 rounded-xl border shadow-xs transition-all duration-200">
             <div>
-              <span class="text-[11px] text-slate-400 font-mono">TICKET #${t.report_id}</span>
-              <h3 class="text-sm font-bold text-slate-900">${t.hazard_type}</h3>
-              <p class="text-xs text-slate-500">${t.notes}</p>
+              <span class="theme-text-muted text-[11px] font-mono">TICKET #${t.report_id}</span>
+              <h3 class="text-sm font-bold">${t.hazard_type}</h3>
+              <p class="theme-text-muted text-xs">${t.notes}</p>
             </div>
             <img src="${t.image_url}" class="w-14 h-14 rounded-lg object-cover border shadow-inner" />
           </div>
           <div class="grid grid-cols-4 gap-2 pt-2">
             ${steps.map((s, idx) => `
               <div class="text-center group">
-                <div class="w-7 h-7 mx-auto rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${                   idx <= currentIdx ? 'bg-blue-600 text-white shadow-sm scale-105' : 'bg-slate-200 text-slate-500'                 }">${idx <= currentIdx ? '✓' : idx + 1}</div>
-                <p class="text-[10px] font-semibold mt-1 transition-colors duration-200 ${idx <= currentIdx ? 'text-blue-600' : 'text-slate-400'}">${s}</p>
+                <div class="w-7 h-7 mx-auto rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${                   idx <= currentIdx ? 'theme-accent-btn shadow-xs scale-105' : 'bg-slate-200 text-slate-600'                 }">${idx <= currentIdx ? '✓' : idx + 1}</div>
+                <p class="text-[10px] font-semibold mt-1 transition-colors duration-200 ${idx <= currentIdx ? 'font-bold' : 'theme-text-muted'}">${s}</p>
               </div>
             `).join('')}
           </div>
         `;
       } catch (err) {
         container.classList.remove('hidden');
-        container.className = "space-y-4 pt-4 border-t border-slate-100 view-transition";
+        container.className = "space-y-4 pt-4 border-t view-transition";
         container.innerHTML = `<p class="text-rose-600 text-xs text-center font-semibold">${err.message}</p>`;
       }
     }
 
-    // --- Municipal Operations Handlers ---
+    // =========================================================================
+    // MUNICIPAL OPS / CONTRACTOR DISPATCH
+    // =========================================================================
     async function loadAdminStats() {
       const res = await fetch('/api/v1/stats');
       const s = await res.json();
@@ -780,18 +1081,18 @@
 
       json.data.forEach(r => {
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 transition-colors duration-150";
+        tr.className = "hover:opacity-80 transition-colors duration-150";
         tr.innerHTML = `
-          <td class="py-3 px-4 font-mono font-bold text-slate-900">${r.report_id}</td>
-          <td class="py-3 px-4 font-mono text-[11px] text-slate-500">${r.reported_by}</td>
+          <td class="py-3 px-4 font-mono font-bold">${r.report_id}</td>
+          <td class="theme-text-muted py-3 px-4 font-mono text-[11px]">${r.reported_by}</td>
           <td class="py-3 px-4 font-medium">${r.hazard_type}</td>
           <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-            r.severity === 'Critical' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
+            r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
           }">${r.severity}</span></td>
           <td class="py-3 px-4 font-semibold text-blue-600">${r.duplicate_count}</td>
           <td class="py-3 px-4 font-semibold">${r.status}</td>
           <td class="py-3 px-4 text-right">
-            <select onchange="updateTicketStatus('${r.report_id}', this.value)" class="text-xs bg-slate-100 border border-slate-300 rounded p-1 cursor-pointer transition-all duration-200 focus:ring-1 focus:ring-blue-500">
+            <select onchange="updateTicketStatus('${r.report_id}', this.value)" class="theme-input text-xs border rounded p-1 cursor-pointer transition-all duration-200">
               <option value="" disabled selected>Update...</option>
               <option value="AI Verified">AI Verified</option>
               <option value="Dispatched">Dispatched</option>
@@ -813,21 +1114,24 @@
       loadReports();
     }
 
+    // =========================================================================
+    // WINDOW INITIALIZATION
+    // =========================================================================
     window.onload = () => {
-     // Check if an account was previously logged in
-        const savedUser = localStorage.getItem('cw_user');
-        if (savedUser) {
-            try {
-            setUserSession(JSON.parse(savedUser));
-            } catch (e) {
-            localStorage.removeItem('cw_user');
-            }
+      initTheme();
+
+      const savedUser = localStorage.getItem('cw_user');
+      if (savedUser) {
+        try {
+          setUserSession(JSON.parse(savedUser));
+        } catch (e) {
+          localStorage.removeItem('cw_user');
         }
+      }
 
-        initMap();
-        loadReports();
-        };
-
+      initMap();
+      loadReports();
+    };
   </script>
 </body>
 </html>
