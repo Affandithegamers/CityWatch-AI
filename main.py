@@ -120,11 +120,8 @@ def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: fl
 
 
 def run_yolo_inference(image_path: str) -> dict:
-    """
-    Executes YOLOv8 object detection on the uploaded image and extracts
-    defect classes, confidence metrics, and preliminary risk severity.
-    """
-    results = model(image_path, device=DEVICE)
+    # imgsz=320 prevents Render free-tier from crashing with Out Of Memory (OOM)
+    results = model(image_path, imgsz=320, device="cpu")
     detected_objects = []
 
     for r in results:
@@ -139,6 +136,19 @@ def run_yolo_inference(image_path: str) -> dict:
                 "confidence": round(conf, 2),
                 "box": coordinates
             })
+
+    if detected_objects:
+        primary_defect = detected_objects[0]["label"]
+        severity = "Critical" if detected_objects[0]["confidence"] > 0.70 else "Medium"
+    else:
+        primary_defect = "General Defect"
+        severity = "Low"
+
+    return {
+        "primary_defect": primary_defect,
+        "severity": severity,
+        "detections": detected_objects
+    }
 
     # Heuristic hazard severity categorization
     if detected_objects:
@@ -186,6 +196,7 @@ def retrieve_all_reports():
     }
 
 
+
 @app.post("/api/v1/report")
 async def submit_hazard_report(
     latitude: float = Form(...),
@@ -193,68 +204,61 @@ async def submit_hazard_report(
     notes: Optional[str] = Form(None),
     image: UploadFile = File(...)
 ):
-    """
-    Processes citizen photo submissions: saves file, runs YOLOv8 detection,
-    and runs a 10m spatial radius check to deduplicate incoming tickets.
-    """
-    if not image.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Uploaded file must be a valid image format.")
+    try:
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        extension = image.filename.split(".")[-1]
+        unique_filename = f"{uuid.uuid4().hex[:10]}.{extension}"
+        saved_filepath = os.path.join(UPLOAD_DIR, unique_filename)
 
-    # 1. Store uploaded photo to local disk
-    extension = image.filename.split(".")[-1]
-    unique_filename = f"{uuid.uuid4().hex[:10]}.{extension}"
-    saved_filepath = os.path.join(UPLOAD_DIR, unique_filename)
+        with open(saved_filepath, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
 
-    with open(saved_filepath, "wb") as buffer:
-        shutil.copyfileobj(image.file, buffer)
+        # Run optimized low-memory inference
+        ai_output = run_yolo_inference(saved_filepath)
 
-    # 2. Run Computer Vision Inference
-    ai_output = run_yolo_inference(saved_filepath)
+        # Proximity Deduplication (10m Haversine)
+        is_duplicate = False
+        target_parent_id = None
+        for existing in REPORTS_DATABASE:
+            if existing["status"] != "Resolved":
+                dist = calculate_haversine_distance(
+                    latitude, longitude,
+                    existing["latitude"], existing["longitude"]
+                )
+                if dist <= 10.0:
+                    is_duplicate = True
+                    target_parent_id = existing["report_id"]
+                    existing["duplicate_count"] += 1
+                    break
 
-    # 3. Geospatial Deduplication (10-meter proximity threshold)
-    is_duplicate = False
-    target_parent_id = None
+        report_record = {
+            "report_id": f"REP-{uuid.uuid4().hex[:6].upper()}",
+            "latitude": latitude,
+            "longitude": longitude,
+            "hazard_type": ai_output["primary_defect"],
+            "severity": ai_output["severity"],
+            "status": "Merged (Duplicate)" if is_duplicate else "AI Verified",
+            "notes": notes or "No additional remarks.",
+            "image_url": f"/uploads/{unique_filename}",
+            "is_duplicate": is_duplicate,
+            "parent_report_id": target_parent_id,
+            "duplicate_count": 1 if not is_duplicate else 0,
+            "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
 
-    for existing_ticket in REPORTS_DATABASE:
-        if existing_ticket["status"] != "Resolved":
-            distance = calculate_haversine_distance(
-                latitude, longitude,
-                existing_ticket["latitude"], existing_ticket["longitude"]
-            )
-            # If within 10 meters, mark as duplicate of existing ticket
-            if distance <= 10.0:
-                is_duplicate = True
-                target_parent_id = existing_ticket["report_id"]
-                existing_ticket["duplicate_count"] += 1
-                break
+        if not is_duplicate:
+            REPORTS_DATABASE.append(report_record)
 
-    # 4. Construct Report Record
-    report_record = {
-        "report_id": f"REP-{uuid.uuid4().hex[:6].upper()}",
-        "latitude": latitude,
-        "longitude": longitude,
-        "hazard_type": ai_output["primary_defect"],
-        "severity": ai_output["severity"],
-        "status": "Merged (Duplicate)" if is_duplicate else "AI Verified",
-        "notes": notes if notes else "No additional remarks.",
-        "image_url": f"/uploads/{unique_filename}",
-        "is_duplicate": is_duplicate,
-        "parent_report_id": target_parent_id,
-        "duplicate_count": 1 if not is_duplicate else 0,
-        "detections": ai_output["detections"],
-        "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
+        return {
+            "success": True,
+            "is_duplicate": is_duplicate,
+            "message": "Merged into duplicate ticket." if is_duplicate else "Ticket created.",
+            "ticket": report_record
+        }
 
-    if not is_duplicate:
-        REPORTS_DATABASE.append(report_record)
-
-    return {
-        "success": True,
-        "is_duplicate": is_duplicate,
-        "message": "Report merged with existing ticket within 10-meter radius." if is_duplicate else "New report registered and AI verified.",
-        "ticket": report_record
-    }
-
+    except Exception as e:
+        print(f"[ERROR] Submission failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Server Error: {str(e)}")
 
 @app.patch("/api/v1/report/{report_id}/status")
 def update_report_status(report_id: str, new_status: str):

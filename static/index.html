@@ -281,33 +281,34 @@
             formData.append("notes", document.getElementById('notes').value);
             formData.append("image", document.getElementById('imageInput').files[0]);
 
-            try {
-                const res = await fetch('/api/v1/report', {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await res.json();
+                            try {
+                    const res = await fetch('/api/v1/report', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!res.ok) {
+                        const errJson = await res.json().catch(() => null);
+                        const errMsg = errJson ? errJson.detail : `Server returned status ${res.status}`;
+                        throw new Error(errMsg);
+                    }
 
-                alertBox.style.display = "block";
-                if (result.is_duplicate) {
+                    const result = await res.json();
+                    alertBox.style.display = "block";
+                    if (result.is_duplicate) {
+                        alertBox.className = "alert-duplicate";
+                        alertBox.innerHTML = `⚠️ <b>Duplicate Detected:</b> ${result.message}`;
+                    } else {
+                        alertBox.className = "alert-success";
+                        alertBox.innerHTML = `✅ <b>Ticket Created:</b> ${result.ticket.report_id} (${result.ticket.hazard_type} - ${result.ticket.severity})`;
+                    }
+                    loadReportMarkers();
+                } catch (err) {
+                    alertBox.style.display = "block";
                     alertBox.className = "alert-duplicate";
-                    alertBox.innerHTML = `⚠️ <b>Duplicate Merged (10m Radius):</b> Merged into parent ticket: <b>${result.ticket.parent_report_id}</b>`;
-                } else {
-                    alertBox.className = "alert-success";
-                    alertBox.innerHTML = `✅ <b>Success!</b> AI classified: <b>${result.ticket.hazard_type}</b> (${result.ticket.severity} Risk)`;
+                    alertBox.innerText = "Error: " + err.message;
                 }
-
-                loadReportMarkers();
-
-                // Switch to map on mobile after 1.5 seconds to view the new pin
-                if (window.innerWidth <= 768) {
-                    setTimeout(() => { switchTab('map'); }, 1500);
-                }
-            } catch (err) {
-                alertBox.style.display = "block";
-                alertBox.className = "alert-duplicate";
-                alertBox.innerText = "Error: Unable to connect to server.";
-            } finally {
+             finally {
                 submitBtn.disabled = false;
                 submitBtn.innerText = "Submit to AI Verification";
             }
