@@ -606,9 +606,7 @@
     const dropPrompt = document.getElementById('dropPrompt');
     const imagePreview = document.getElementById('imagePreview');
 
-    // =========================================================================
     // THEME ENGINE
-    // =========================================================================
     function setTheme(themeName) {
       currentTheme = themeName;
       document.body.setAttribute('data-theme', themeName);
@@ -645,9 +643,7 @@
       document.getElementById('settingsModalCard').classList.remove('modal-enter');
     }
 
-    // =========================================================================
     // PASSWORD VISIBILITY TOGGLE
-    // =========================================================================
     function togglePasswordVisibility(inputId, iconId) {
       const input = document.getElementById(inputId);
       const icon = document.getElementById(iconId);
@@ -666,9 +662,7 @@
       }
     }
 
-    // =========================================================================
     // LEAFLET MAP
-    // =========================================================================
     function initMap() {
       map = L.map('map').setView([3.1390, 101.6869], 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -706,9 +700,7 @@
       }
     }
 
-    // =========================================================================
     // DRAG & DROP PHOTO UPLOAD
-    // =========================================================================
     function showFilePreview(file) {
       if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
@@ -752,9 +744,7 @@
       }
     });
 
-    // =========================================================================
     // VIEW SWITCHING (SPA)
-    // =========================================================================
     function switchView(viewName) {
       if (viewName === 'admin' && (!currentUser || currentUser.role !== 'admin')) {
         alert("Restricted: Municipal Authority account required. Sign in or register as an Admin.");
@@ -791,9 +781,7 @@
       }
     }
 
-    // =========================================================================
     // AUTHENTICATION & SESSION PERSISTENCE
-    // =========================================================================
     function openAuthModal() {
       const modal = document.getElementById('authModal');
       const card = document.getElementById('authModalCard');
@@ -897,9 +885,7 @@
       }
     }
 
-    // =========================================================================
     // INCIDENT REPORTING & PIPELINE
-    // =========================================================================
     async function loadReports() {
       try {
         const res = await fetch('/api/v1/reports');
@@ -983,9 +969,8 @@
       }
     });
 
-    // =========================================================================
+
     // CITIZEN HISTORY & TRACKER
-    // =========================================================================
     async function loadMyReports() {
       const email = currentUser ? currentUser.email : "anonymous@citizen.my";
       document.getElementById('myReportsSubtitle').textContent = `Showing incident history for ${email}`;
@@ -1061,9 +1046,7 @@
       }
     }
 
-    // =========================================================================
     // MUNICIPAL OPS / CONTRACTOR DISPATCH
-    // =========================================================================
     async function loadAdminStats() {
       const res = await fetch('/api/v1/stats');
       const s = await res.json();
@@ -1114,9 +1097,7 @@
       loadReports();
     }
 
-    // =========================================================================
     // WINDOW INITIALIZATION
-    // =========================================================================
     window.onload = () => {
       initTheme();
 
