@@ -19,6 +19,8 @@ from database import (
     increment_duplicate, get_database_stats
 )
 
+from ai_detector import run_yolo_multi_hazard_triage
+
 app = FastAPI(
     title="CityWatch AI",
     description="Intelligent Municipal Multi-Hazard Triage & Spatial Deduplication Platform",
