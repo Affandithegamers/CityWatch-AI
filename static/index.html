@@ -558,6 +558,28 @@
 
     function setUserSession(user) {
       currentUser = user;
+
+        if (user) {
+                localStorage.setItem('cw_user', JSON.stringify(user));
+                document.getElementById('userNameDisplay').textContent = `${user.full_name} (${user.role.toUpperCase()})`;
+                
+                const authBtn = document.getElementById('authActionBtn');
+                authBtn.textContent = "Sign Out";
+                authBtn.className = "text-xs bg-rose-600 hover:bg-rose-700 active:scale-95 font-semibold px-3 py-1.5 rounded-lg text-white shadow-sm transition-all duration-200 cursor-pointer";
+                
+                authBtn.onclick = () => {
+                localStorage.removeItem('cw_user'); // Clear saved session
+                currentUser = null;
+                document.getElementById('userNameDisplay').textContent = "Guest Citizen";
+                authBtn.textContent = "Sign In / Register";
+                authBtn.className = "text-xs bg-blue-600 hover:bg-blue-700 active:scale-95 font-semibold px-3 py-1.5 rounded-lg text-white shadow-sm transition-all duration-200 cursor-pointer";
+                authBtn.onclick = openAuthModal;
+                switchView('report');
+                };
+
+                if (currentUser.role === 'admin') switchView('admin');
+            }
+
       document.getElementById('userNameDisplay').textContent = `${user.full_name} (${user.role.toUpperCase()})`;
       
       const authBtn = document.getElementById('authActionBtn');
@@ -792,9 +814,20 @@
     }
 
     window.onload = () => {
-      initMap();
-      loadReports();
-    };
+     // Check if an account was previously logged in
+        const savedUser = localStorage.getItem('cw_user');
+        if (savedUser) {
+            try {
+            setUserSession(JSON.parse(savedUser));
+            } catch (e) {
+            localStorage.removeItem('cw_user');
+            }
+        }
+
+        initMap();
+        loadReports();
+        };
+
   </script>
 </body>
 </html>
