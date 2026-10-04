@@ -12,10 +12,10 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- UPGRADE 2: Leaflet Heatmap CDN -->
+  <!-- Leaflet Heatmap CDN -->
   <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
-  <!-- External Separated Theme Stylesheet -->
+  <!-- External 2-Theme Stylesheet -->
   <link rel="stylesheet" href="theme.css" />
 </head>
 <body data-theme="blue" class="flex flex-col min-h-screen font-sans antialiased selection:bg-slate-700 selection:text-white">
@@ -24,6 +24,7 @@
   <header class="theme-header text-white shadow-md sticky top-0 z-50 border-b transition-colors duration-300">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
       
+      <!-- Brand Logo -->
       <div class="flex items-center space-x-3 cursor-pointer group" onclick="switchView('report')">
         <div class="theme-logo w-8 h-8 rounded-lg group-hover:rotate-3 flex items-center justify-center font-black text-white text-base shadow-sm transition-all duration-300">
           CW
@@ -34,6 +35,7 @@
         </div>
       </div>
 
+      <!-- Navigation Tabs -->
       <nav class="theme-nav-pill flex items-center p-1 rounded-xl text-xs font-semibold shadow-inner border transition-colors duration-300">
         <button id="nav-report" onclick="switchView('report')" class="px-3.5 py-1.5 rounded-lg theme-accent-btn shadow-sm transition active:scale-95">
           Report Defect
@@ -49,7 +51,9 @@
         </button>
       </nav>
 
+      <!-- Profile & Settings Widgets -->
       <div class="flex items-center space-x-2">
+        <!-- 2-Theme Selector Button -->
         <button onclick="openSettingsModal()" class="theme-nav-pill text-xs border hover:opacity-90 active:scale-95 px-2.5 py-1.5 rounded-lg text-slate-200 shadow-sm transition cursor-pointer flex items-center space-x-1.5" title="Appearance Settings">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           <span class="hidden sm:inline">Theme</span>
@@ -68,76 +72,48 @@
     </div>
   </header>
 
-  <!-- 4-THEME MODAL -->
+  <!-- 2-THEME SETTINGS MODAL -->
   <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div id="settingsModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
       <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
         <div>
           <h3 class="text-base font-bold text-slate-900">Appearance & Theme</h3>
-          <p class="text-xs text-slate-500">Pick an ergonomic palette for your platform session.</p>
+          <p class="text-xs text-slate-500">Select your preferred operating palette.</p>
         </div>
         <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold px-2">&times;</button>
       </div>
 
-      <div class="grid grid-cols-1 gap-2.5">
-        <div onclick="setTheme('blue')" id="theme-card-blue" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-blue-500 cursor-pointer transition">
+      <div class="grid grid-cols-1 gap-3">
+        <!-- Theme 1: Civic Blue -->
+        <div onclick="setTheme('blue')" id="theme-card-blue" class="flex items-center justify-between p-3.5 rounded-xl border-2 border-slate-200 hover:border-blue-500 cursor-pointer transition">
           <div class="flex items-center space-x-3">
             <div class="flex -space-x-1">
-              <span class="w-6 h-6 rounded-full bg-slate-900 border-2 border-white shadow-xs"></span>
-              <span class="w-6 h-6 rounded-full bg-blue-600 border-2 border-white shadow-xs"></span>
-              <span class="w-6 h-6 rounded-full bg-slate-100 border-2 border-white shadow-xs"></span>
+              <span class="w-7 h-7 rounded-full bg-slate-900 border-2 border-white shadow-xs"></span>
+              <span class="w-7 h-7 rounded-full bg-blue-600 border-2 border-white shadow-xs"></span>
+              <span class="w-7 h-7 rounded-full bg-slate-100 border-2 border-white shadow-xs"></span>
             </div>
             <div>
               <p class="text-xs font-bold text-slate-800">Civic Blue (Original)</p>
-              <p class="text-[11px] text-slate-400">Classic municipal infrastructure palette</p>
+              <p class="text-[11px] text-slate-400">Classic municipal authority palette</p>
             </div>
           </div>
           <span id="check-blue" class="text-xs font-bold text-blue-600">✓ Active</span>
         </div>
 
-        <div onclick="setTheme('coffee')" id="theme-card-coffee" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#8A5A36] cursor-pointer transition">
+        <!-- Theme 2: Coffee & Vanilla -->
+        <div onclick="setTheme('coffee')" id="theme-card-coffee" class="flex items-center justify-between p-3.5 rounded-xl border-2 border-slate-200 hover:border-[#8A5A36] cursor-pointer transition">
           <div class="flex items-center space-x-3">
             <div class="flex -space-x-1">
-              <span class="w-6 h-6 rounded-full bg-[#231912] border-2 border-white shadow-xs"></span>
-              <span class="w-6 h-6 rounded-full bg-[#8A5A36] border-2 border-white shadow-xs"></span>
-              <span class="w-6 h-6 rounded-full bg-[#FAF6F0] border-2 border-white shadow-xs"></span>
+              <span class="w-7 h-7 rounded-full bg-[#231912] border-2 border-white shadow-xs"></span>
+              <span class="w-7 h-7 rounded-full bg-[#8A5A36] border-2 border-white shadow-xs"></span>
+              <span class="w-7 h-7 rounded-full bg-[#FAF6F0] border-2 border-white shadow-xs"></span>
             </div>
             <div>
               <p class="text-xs font-bold text-slate-800">Coffee & Vanilla</p>
-              <p class="text-[11px] text-slate-400">Rich espresso, latte foam & warm cream</p>
+              <p class="text-[11px] text-slate-400">Rich espresso & warm cream</p>
             </div>
           </div>
           <span id="check-coffee" class="hidden text-xs font-bold text-[#8A5A36]">✓ Active</span>
-        </div>
-
-        <div onclick="setTheme('charcoal')" id="theme-card-charcoal" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#44403C] cursor-pointer transition">
-          <div class="flex items-center space-x-3">
-            <div class="flex -space-x-1">
-              <span class="w-6 h-6 rounded-full bg-[#1C1917] border-2 border-white shadow-xs"></span>
-              <span class="w-6 h-6 rounded-full bg-[#44403C] border-2 border-white shadow-xs"></span>
-              <span class="w-6 h-6 rounded-full bg-[#F4EFEB] border-2 border-white shadow-xs"></span>
-            </div>
-            <div>
-              <p class="text-xs font-bold text-slate-800">Charcoal on Sand</p>
-              <p class="text-[11px] text-slate-400">Natural stone, linen paper & dark charcoal</p>
-            </div>
-          </div>
-          <span id="check-charcoal" class="hidden text-xs font-bold text-[#44403C]">✓ Active</span>
-        </div>
-
-        <div onclick="setTheme('sage')" id="theme-card-sage" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#2E6A47] cursor-pointer transition">
-          <div class="flex items-center space-x-3">
-            <div class="flex -space-x-1">
-              <span class="w-6 h-6 rounded-full bg-[#18291F] border-2 border-white shadow-xs"></span>
-              <span class="w-6 h-6 rounded-full bg-[#2E6A47] border-2 border-white shadow-xs"></span>
-              <span class="w-6 h-6 rounded-full bg-[#F1F5F2] border-2 border-white shadow-xs"></span>
-            </div>
-            <div>
-              <p class="text-xs font-bold text-slate-800">Sage & Forest Green</p>
-              <p class="text-[11px] text-slate-400">Calming eucalyptus & deep forest pine</p>
-            </div>
-          </div>
-          <span id="check-sage" class="hidden text-xs font-bold text-[#2E6A47]">✓ Active</span>
         </div>
       </div>
 
@@ -147,7 +123,7 @@
     </div>
   </div>
 
-  <!-- AUTH MODAL -->
+  <!-- AUTHENTICATION MODAL (SINGLE INSTANCE) -->
   <div id="authModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div id="authModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
       <div class="flex border-b border-slate-200 mb-5">
@@ -220,7 +196,7 @@
             </select>
           </div>
 
-          <!-- GPS Telemetry with UPGRADE 1: Reverse Geocoding Address Display -->
+          <!-- GPS Telemetry with Street Address Display -->
           <div>
             <div class="flex justify-between items-center mb-1">
               <label class="block text-xs font-semibold uppercase tracking-wider">GPS Telemetry</label>
@@ -235,7 +211,6 @@
               <input type="number" step="any" id="lngInput" placeholder="Longitude" readonly required class="theme-input w-full text-xs p-2.5 border rounded-lg bg-slate-50 font-mono text-slate-500" />
             </div>
             
-            <!-- UPGRADE 1: Street Address Badge -->
             <p id="addressDisplay" class="text-[11px] text-blue-600 font-medium mt-1.5 truncate">
               📍 Street address will appear after calibrating GPS
             </p>
@@ -289,11 +264,10 @@
             </div>
           </div>
 
-          <!-- Remarks with UPGRADE 3: Voice Dictation Button -->
+          <!-- Remarks with Voice Dictation Button -->
           <div>
             <div class="flex justify-between items-center mb-1">
               <label class="block text-xs font-semibold uppercase tracking-wider">Remarks</label>
-              <!-- UPGRADE 3: Speech to Text Trigger -->
               <button type="button" id="voiceDictationBtn" onclick="toggleVoiceDictation()" class="text-[11px] text-blue-600 hover:text-blue-700 font-semibold flex items-center space-x-1 cursor-pointer">
                 <span>🎙️ Speak Remarks</span>
               </button>
@@ -309,14 +283,13 @@
         <div id="feedbackBanner" class="hidden mt-4 p-3 rounded-xl text-xs font-medium border"></div>
       </div>
 
-      <!-- Live Map Container with UPGRADE 2: Heatmap Toggle Button -->
+      <!-- Live Map Container with Heatmap Toggle -->
       <div class="theme-card lg:col-span-8 p-2 rounded-2xl shadow-sm border relative min-h-[460px] flex flex-col">
         <div class="flex flex-wrap justify-between items-center px-3 py-2 border-b gap-2">
           <div class="flex items-center space-x-2">
             <span class="font-bold text-xs uppercase tracking-wider">Live Spatial Map</span>
             <span id="mapReportCountBadge" class="theme-soft-badge text-[10px] font-semibold px-2 py-0.5 rounded-full border">0 Reports</span>
             
-            <!-- UPGRADE 2: Heatmap Toggle Switch -->
             <button type="button" id="btnToggleHeatmap" onclick="toggleHeatmapView()" class="text-[10px] font-bold px-2 py-0.5 rounded border bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer ml-1">
               🔥 Heatmap Off
             </button>
@@ -409,18 +382,18 @@
 
   </main>
 
-  <!-- JAVASCRIPT ENGINE -->
+  <!-- JAVASCRIPT ENGINE (CLEAN SINGLE INSTANCE) -->
   <script>
     let currentUser = null;
     let currentTheme = 'blue';
     let map, splitMapMarker, activeReports = [];
     let markersLayer = L.layerGroup();
 
-    // UPGRADE 2: Heatmap Engine State
+    // Heatmap Engine State
     let heatLayer = null;
     let isHeatmapActive = false;
 
-    // UPGRADE 3: Voice Recognition State
+    // Voice Recognition State
     let recognition = null;
     let isListening = false;
 
@@ -435,20 +408,20 @@
       return currentUser !== null && currentUser.email;
     }
 
-    // 1. Theme Engine
+    // 1. 2-Theme Controller (Blue & Coffee)
     function setTheme(themeName) {
       currentTheme = themeName;
       document.body.setAttribute('data-theme', themeName);
       localStorage.setItem('cw_theme', themeName);
 
-      ['blue', 'coffee', 'charcoal', 'sage'].forEach(t => {
+      ['blue', 'coffee'].forEach(t => {
         const card = document.getElementById(`theme-card-${t}`);
         const check = document.getElementById(`check-${t}`);
         if (t === themeName) {
-          card.classList.add('border-blue-600', 'bg-slate-50/50');
+          card.classList.add(t === 'blue' ? 'border-blue-600' : 'border-[#8A5A36]', 'bg-slate-50/50');
           check.classList.remove('hidden');
         } else {
-          card.classList.remove('border-blue-600', 'bg-slate-50/50');
+          card.classList.remove('border-blue-600', 'border-[#8A5A36]', 'bg-slate-50/50');
           check.classList.add('hidden');
         }
       });
@@ -585,7 +558,7 @@
       }
     });
 
-    // 3. Map & UPGRADE 1: Reverse Geocoding Integration
+    // 3. Map & Reverse Geocoding Integration
     function initMap() {
       map = L.map('map').setView([3.1390, 101.6869], 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -601,7 +574,7 @@
         document.getElementById('latInput').value = lat;
         document.getElementById('lngInput').value = lng;
         placeTempPin(e.latlng.lat, e.latlng.lng);
-        fetchStreetAddress(lat, lng); // UPGRADE 1
+        fetchStreetAddress(lat, lng);
       });
     }
 
@@ -620,14 +593,13 @@
             document.getElementById('lngInput').value = lng;
             map.setView([lat, lng], 15);
             placeTempPin(lat, lng);
-            fetchStreetAddress(lat, lng); // UPGRADE 1
+            fetchStreetAddress(lat, lng);
           },
           (err) => alert("GPS detection failed: " + err.message)
         );
       }
     }
 
-    // UPGRADE 1: Reverse Geocoding Address Fetcher
     async function fetchStreetAddress(lat, lng) {
       const display = document.getElementById('addressDisplay');
       display.textContent = "📍 Locating street address...";
@@ -640,7 +612,6 @@
       }
     }
 
-    // UPGRADE 2: Live Heatmap Layer Toggle
     function toggleHeatmapView() {
       isHeatmapActive = !isHeatmapActive;
       const btn = document.getElementById('btnToggleHeatmap');
@@ -665,7 +636,6 @@
       }
     }
 
-    // UPGRADE 3: Native Voice Dictation
     function toggleVoiceDictation() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
@@ -707,7 +677,6 @@
       document.getElementById('voiceDictationBtn').innerHTML = `<span>🎙️ Speak Remarks</span>`;
     }
 
-    // Upvote/Downvote Toggle with Anti-Spam Guard
     async function handleUpvoteClick(reportId) {
       if (!isUserSignedIn()) {
         alert("Action Blocked: You must be signed in to endorse or upvote reports. This prevents spam and prank votes.");
@@ -739,7 +708,7 @@
 
         document.getElementById('mapReportCountBadge').textContent = `${json.count} Reports`;
         
-        if (isHeatmapActive) return; // Keep heatmap rendered if active
+        if (isHeatmapActive) return;
 
         markersLayer.clearLayers();
 
@@ -861,7 +830,7 @@
       }
     });
 
-    // 5. Navigation & SPA Routing
+    // 5. Navigation & Single-Page Routing
     function switchView(viewName) {
       if (viewName === 'admin' && (!currentUser || currentUser.role !== 'admin')) {
         alert("Restricted: Municipal Authority account required.");

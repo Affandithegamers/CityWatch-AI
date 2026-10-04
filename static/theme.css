@@ -1,5 +1,5 @@
 /* ========================================================
-   CITYWATCH AI: MULTI-THEME DESIGN ENGINE
+   CITYWATCH AI: 2-THEME ENGINE (CIVIC BLUE & COFFEE)
    ======================================================== */
 
 /* 1. Civic Blue (Original Default) */
@@ -44,50 +44,6 @@ body[data-theme="coffee"] {
   --accent-soft-text: #7A4E2D;
   --btn-text: #ffffff;
   --logo-bg: #8A5A36;
-}
-
-/* 3. Charcoal on Sand */
-body[data-theme="charcoal"] {
-  --bg-body: #F4EFEB;
-  --bg-card: #ffffff;
-  --border-card: #E3DBD2;
-  --text-main: #1C1917;
-  --text-muted: #78716C;
-  --input-bg: #F4EFEB;
-  --input-border: #DDD5CC;
-  --header-bg: #1C1917;
-  --header-border: #292524;
-  --nav-pill-bg: #292524;
-  --nav-pill-border: #44403C;
-  --accent: #44403C;
-  --accent-hover: #292524;
-  --accent-soft: #EAE3DA;
-  --accent-soft-border: #D7CDC2;
-  --accent-soft-text: #292524;
-  --btn-text: #ffffff;
-  --logo-bg: #44403C;
-}
-
-/* 4. Sage & Forest Green */
-body[data-theme="sage"] {
-  --bg-body: #F1F5F2;
-  --bg-card: #ffffff;
-  --border-card: #D5E0D7;
-  --text-main: #18281F;
-  --text-muted: #566C5E;
-  --input-bg: #F1F5F2;
-  --input-border: #CFDDD2;
-  --header-bg: #18291F;
-  --header-border: #243B2E;
-  --nav-pill-bg: #111D16;
-  --nav-pill-border: #243B2E;
-  --accent: #2E6A47;
-  --accent-hover: #225136;
-  --accent-soft: #E3EDE5;
-  --accent-soft-border: #C8DDCB;
-  --accent-soft-text: #225136;
-  --btn-text: #ffffff;
-  --logo-bg: #2E6A47;
 }
 
 /* ========================================================
