@@ -2,16 +2,36 @@ import os
 import gc
 from PIL import Image
 import torch
+
+# --- PYTORCH 2.6+ COMPATIBILITY PATCH FOR RENDER ---
+# Prevents PyTorch 2.6 weights_only UnpicklingError when loading YOLO checkpoints
+_orig_torch_load = torch.load
+
+def _patched_torch_load(*args, **kwargs):
+    if "weights_only" not in kwargs:
+        kwargs["weights_only"] = False
+    return _orig_torch_load(*args, **kwargs)
+
+torch.load = _patched_torch_load
+
+# Safe globals registration fallback
+try:
+    from ultralytics.nn.tasks import DetectionModel
+    if hasattr(torch.serialization, "add_safe_globals"):
+        torch.serialization.add_safe_globals([DetectionModel])
+except Exception:
+    pass
+
 from ultralytics import YOLO
 
 # Hardware computation device configuration
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Load YOLOv8 deep learning model weights
+# Load YOLOv8 model weights
 model = YOLO("yolov8n.pt")
 model.to(DEVICE)
 
-# Non-civic COCO classes that should NEVER be labeled as municipal defects
+# Non-civic COCO classes that should never be labeled as municipal defects
 IRRELEVANT_CLASSES = {
     "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear",
     "zebra", "giraffe", "person", "chair", "couch", "potted plant",
@@ -33,7 +53,7 @@ def optimize_and_save_image(upload_file, target_path: str):
 
 
 def run_yolo_multi_hazard_triage(raw_img_path: str, annotated_img_path: str, selected_category: str) -> dict:
-    """Executes YOLOv8 object detection, discards non-civic objects (like birds), and scores hazard severity."""
+    """Executes YOLOv8 object detection, discards non-civic objects, and scores hazard severity."""
     try:
         with torch.inference_mode():
             results = model(raw_img_path, imgsz=320, device=DEVICE, verbose=False)
@@ -51,7 +71,6 @@ def run_yolo_multi_hazard_triage(raw_img_path: str, annotated_img_path: str, sel
             class_name = model.names[class_id].lower()
             conf = float(box.conf[0].item())
 
-            # Skip animals and domestic objects (e.g. water puddles flagged as 'bird')
             if class_name in IRRELEVANT_CLASSES:
                 continue
 
