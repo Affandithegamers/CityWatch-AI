@@ -1,0 +1,123 @@
+/* ========================================================
+   CITYWATCH AI: MULTI-THEME DESIGN ENGINE
+   ======================================================== */
+
+/* 1. Civic Blue (Original Default) */
+:root, body[data-theme="blue"] {
+  --bg-body: #f8fafc;
+  --bg-card: #ffffff;
+  --border-card: #e2e8f0;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --input-bg: #f8fafc;
+  --input-border: #cbd5e1;
+  --header-bg: #0f172a;
+  --header-border: #1e293b;
+  --nav-pill-bg: #1e293b;
+  --nav-pill-border: #334155;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #eff6ff;
+  --accent-soft-border: #bfdbfe;
+  --accent-soft-text: #1d4ed8;
+  --btn-text: #ffffff;
+  --logo-bg: #2563eb;
+}
+
+/* 2. Coffee & Vanilla */
+body[data-theme="coffee"] {
+  --bg-body: #FAF6F0;
+  --bg-card: #ffffff;
+  --border-card: #E8DFD1;
+  --text-main: #2E241E;
+  --text-muted: #7A6A5E;
+  --input-bg: #FAF6F0;
+  --input-border: #E2D8CC;
+  --header-bg: #231912;
+  --header-border: #3A2C22;
+  --nav-pill-bg: #1B130E;
+  --nav-pill-border: #33241A;
+  --accent: #8A5A36;
+  --accent-hover: #724828;
+  --accent-soft: #F5EFE6;
+  --accent-soft-border: #E2D4C3;
+  --accent-soft-text: #7A4E2D;
+  --btn-text: #ffffff;
+  --logo-bg: #8A5A36;
+}
+
+/* 3. Charcoal on Sand */
+body[data-theme="charcoal"] {
+  --bg-body: #F4EFEB;
+  --bg-card: #ffffff;
+  --border-card: #E3DBD2;
+  --text-main: #1C1917;
+  --text-muted: #78716C;
+  --input-bg: #F4EFEB;
+  --input-border: #DDD5CC;
+  --header-bg: #1C1917;
+  --header-border: #292524;
+  --nav-pill-bg: #292524;
+  --nav-pill-border: #44403C;
+  --accent: #44403C;
+  --accent-hover: #292524;
+  --accent-soft: #EAE3DA;
+  --accent-soft-border: #D7CDC2;
+  --accent-soft-text: #292524;
+  --btn-text: #ffffff;
+  --logo-bg: #44403C;
+}
+
+/* 4. Sage & Forest Green */
+body[data-theme="sage"] {
+  --bg-body: #F1F5F2;
+  --bg-card: #ffffff;
+  --border-card: #D5E0D7;
+  --text-main: #18281F;
+  --text-muted: #566C5E;
+  --input-bg: #F1F5F2;
+  --input-border: #CFDDD2;
+  --header-bg: #18291F;
+  --header-border: #243B2E;
+  --nav-pill-bg: #111D16;
+  --nav-pill-border: #243B2E;
+  --accent: #2E6A47;
+  --accent-hover: #225136;
+  --accent-soft: #E3EDE5;
+  --accent-soft-border: #C8DDCB;
+  --accent-soft-text: #225136;
+  --btn-text: #ffffff;
+  --logo-bg: #2E6A47;
+}
+
+/* ========================================================
+   BASE RULES & COMPONENT MAPPINGS
+   ======================================================== */
+body {
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.theme-card { background-color: var(--bg-card) !important; border-color: var(--border-card) !important; }
+.theme-input { background-color: var(--input-bg) !important; border-color: var(--input-border) !important; color: var(--text-main) !important; }
+.theme-header { background-color: var(--header-bg) !important; border-color: var(--header-border) !important; }
+.theme-nav-pill { background-color: var(--nav-pill-bg) !important; border-color: var(--nav-pill-border) !important; }
+.theme-accent-btn { background-color: var(--accent) !important; color: var(--btn-text) !important; }
+.theme-accent-btn:hover { background-color: var(--accent-hover) !important; }
+.theme-soft-badge { background-color: var(--accent-soft) !important; border-color: var(--accent-soft-border) !important; color: var(--accent-soft-text) !important; }
+.theme-logo { background-color: var(--logo-bg) !important; }
+.theme-text-muted { color: var(--text-muted) !important; }
+
+/* Leaflet Map Card Styling */
+.leaflet-popup-content-wrapper { border-radius: 14px; overflow: hidden; padding: 0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25); }
+.leaflet-popup-content { margin: 0; line-height: 1.4; }
+
+/* Micro-interaction Keyframes */
+@keyframes viewFadeSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.view-transition { animation: viewFadeSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes modalPopIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.modal-enter { animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+.drag-active { border-color: var(--accent) !important; background-color: var(--accent-soft) !important; transform: scale(1.01); }

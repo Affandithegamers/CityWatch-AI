@@ -12,166 +12,55 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <style>
-    /* Dynamic Theme Variables */
-    :root, body[data-theme="blue"] {
-      --bg-body: #f8fafc;
-      --bg-card: #ffffff;
-      --border-card: #e2e8f0;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --input-bg: #f8fafc;
-      --input-border: #e2e8f0;
-      --header-bg: #0f172a;
-      --header-border: #1e293b;
-      --nav-pill-bg: #1e293b;
-      --nav-pill-border: #334155;
-      --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --accent-soft: #eff6ff;
-      --accent-soft-border: #bfdbfe;
-      --accent-soft-text: #1d4ed8;
-      --btn-text: #ffffff;
-      --logo-bg: #2563eb;
-    }
+  <!-- UPGRADE 2: Leaflet Heatmap CDN -->
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
-    body[data-theme="coffee"] {
-      --bg-body: #FAF6F0;
-      --bg-card: #ffffff;
-      --border-card: #E8DFD1;
-      --text-main: #2E241E;
-      --text-muted: #7A6A5E;
-      --input-bg: #FAF6F0;
-      --input-border: #E2D8CC;
-      --header-bg: #231912;
-      --header-border: #3A2C22;
-      --nav-pill-bg: #1B130E;
-      --nav-pill-border: #33241A;
-      --accent: #8A5A36;
-      --accent-hover: #724828;
-      --accent-soft: #F5EFE6;
-      --accent-soft-border: #E2D4C3;
-      --accent-soft-text: #7A4E2D;
-      --btn-text: #ffffff;
-      --logo-bg: #8A5A36;
-    }
-
-    body[data-theme="charcoal"] {
-      --bg-body: #F4EFEB;
-      --bg-card: #ffffff;
-      --border-card: #E3DBD2;
-      --text-main: #1C1917;
-      --text-muted: #78716C;
-      --input-bg: #F4EFEB;
-      --input-border: #DDD5CC;
-      --header-bg: #1C1917;
-      --header-border: #292524;
-      --nav-pill-bg: #292524;
-      --nav-pill-border: #44403C;
-      --accent: #44403C;
-      --accent-hover: #292524;
-      --accent-soft: #EAE3DA;
-      --accent-soft-border: #D7CDC2;
-      --accent-soft-text: #292524;
-      --btn-text: #ffffff;
-      --logo-bg: #44403C;
-    }
-
-    body[data-theme="sage"] {
-      --bg-body: #F1F5F2;
-      --bg-card: #ffffff;
-      --border-card: #D5E0D7;
-      --text-main: #18281F;
-      --text-muted: #566C5E;
-      --input-bg: #F1F5F2;
-      --input-border: #CFDDD2;
-      --header-bg: #18291F;
-      --header-border: #243B2E;
-      --nav-pill-bg: #111D16;
-      --nav-pill-border: #243B2E;
-      --accent: #2E6A47;
-      --accent-hover: #225136;
-      --accent-soft: #E3EDE5;
-      --accent-soft-border: #C8DDCB;
-      --accent-soft-text: #225136;
-      --btn-text: #ffffff;
-      --logo-bg: #2E6A47;
-    }
-
-    body {
-      background-color: var(--bg-body);
-      color: var(--text-main);
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
-
-    .theme-card { background-color: var(--bg-card) !important; border-color: var(--border-card) !important; }
-    .theme-input { background-color: var(--input-bg) !important; border-color: var(--input-border) !important; color: var(--text-main) !important; }
-    .theme-header { background-color: var(--header-bg) !important; border-color: var(--header-border) !important; }
-    .theme-nav-pill { background-color: var(--nav-pill-bg) !important; border-color: var(--nav-pill-border) !important; }
-    .theme-accent-btn { background-color: var(--accent) !important; color: var(--btn-text) !important; }
-    .theme-accent-btn:hover { background-color: var(--accent-hover) !important; }
-    .theme-soft-badge { background-color: var(--accent-soft) !important; border-color: var(--accent-soft-border) !important; color: var(--accent-soft-text) !important; }
-    .theme-logo { background-color: var(--logo-bg) !important; }
-    .theme-text-muted { color: var(--text-muted) !important; }
-
-    .leaflet-popup-content-wrapper { border-radius: 14px; overflow: hidden; padding: 0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2); }
-    .leaflet-popup-content { margin: 0; line-height: 1.4; }
-
-    @keyframes viewFadeSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-    .view-transition { animation: viewFadeSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-    @keyframes modalPopIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-    .modal-enter { animation: modalPopIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-    .drag-active { border-color: var(--accent) !important; background-color: var(--accent-soft) !important; transform: scale(1.01); }
-  </style>
+  <!-- External Separated Theme Stylesheet -->
+  <link rel="stylesheet" href="theme.css" />
 </head>
 <body data-theme="blue" class="flex flex-col min-h-screen font-sans antialiased selection:bg-slate-700 selection:text-white">
 
-  <!-- Header & Navigation Bar -->
-  <header class="theme-header text-white shadow-md sticky top-0 z-50 transition-colors duration-300 border-b">
+  <!-- HEADER -->
+  <header class="theme-header text-white shadow-md sticky top-0 z-50 border-b transition-colors duration-300">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
       
-      <!-- Brand Logo with Tilt Micro-interaction -->
       <div class="flex items-center space-x-3 cursor-pointer group" onclick="switchView('report')">
-        <div id="cwLogoBadge" class="theme-logo w-8 h-8 rounded-lg group-hover:rotate-3 flex items-center justify-center font-black text-white text-base shadow-sm transition-all duration-300">
+        <div class="theme-logo w-8 h-8 rounded-lg group-hover:rotate-3 flex items-center justify-center font-black text-white text-base shadow-sm transition-all duration-300">
           CW
         </div>
         <div>
-          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white transition-colors duration-200">CityWatch AI</h1>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">CityWatch AI</h1>
           <p class="text-[11px] text-slate-300/80">Intelligent Municipal Hazard Platform</p>
         </div>
       </div>
 
-      <!-- Navigation Tabs -->
       <nav class="theme-nav-pill flex items-center p-1 rounded-xl text-xs font-semibold shadow-inner border transition-colors duration-300">
-        <button id="nav-report" onclick="switchView('report')" class="px-3.5 py-1.5 rounded-lg theme-accent-btn shadow-sm transition-all duration-200 active:scale-95">
+        <button id="nav-report" onclick="switchView('report')" class="px-3.5 py-1.5 rounded-lg theme-accent-btn shadow-sm transition active:scale-95">
           Report Defect
         </button>
-        <button id="nav-myreports" onclick="switchView('myreports')" class="px-3.5 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all duration-200 active:scale-95">
+        <button id="nav-myreports" onclick="switchView('myreports')" class="px-3.5 py-1.5 rounded-lg text-slate-300 hover:text-white transition active:scale-95">
           My Reports
         </button>
-        <button id="nav-track" onclick="switchView('track')" class="px-3.5 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all duration-200 active:scale-95">
+        <button id="nav-track" onclick="switchView('track')" class="px-3.5 py-1.5 rounded-lg text-slate-300 hover:text-white transition active:scale-95">
           Track Ticket
         </button>
-        <button id="nav-admin" onclick="switchView('admin')" class="px-3.5 py-1.5 rounded-lg text-amber-400 hover:text-amber-300 transition-all duration-200 active:scale-95">
+        <button id="nav-admin" onclick="switchView('admin')" class="px-3.5 py-1.5 rounded-lg text-amber-400 hover:text-amber-300 transition active:scale-95">
           Council Ops
         </button>
       </nav>
 
-      <!-- Profile & Settings Widgets -->
       <div class="flex items-center space-x-2">
-        <button onclick="openSettingsModal()" class="theme-nav-pill text-xs border hover:opacity-90 active:scale-95 px-2.5 py-1.5 rounded-lg text-slate-200 shadow-sm transition-all duration-200 cursor-pointer flex items-center space-x-1.5" title="Appearance Settings">
+        <button onclick="openSettingsModal()" class="theme-nav-pill text-xs border hover:opacity-90 active:scale-95 px-2.5 py-1.5 rounded-lg text-slate-200 shadow-sm transition cursor-pointer flex items-center space-x-1.5" title="Appearance Settings">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           <span class="hidden sm:inline">Theme</span>
         </button>
 
-        <div id="userBadge" class="theme-nav-pill border px-3 py-1.5 rounded-lg text-xs flex items-center space-x-2 shadow-sm">
-          <span id="userDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <div id="userBadge" class="theme-nav-pill border px-3 py-1.5 rounded-lg text-xs flex items-center space-x-2">
+          <span id="userDot" class="w-2 h-2 rounded-full bg-slate-400"></span>
           <span id="userNameDisplay" class="font-medium text-slate-200">Guest Citizen</span>
         </div>
 
-        <button onclick="openAuthModal()" id="authActionBtn" class="theme-accent-btn text-xs active:scale-95 font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition-all duration-200 cursor-pointer">
+        <button onclick="openAuthModal()" id="authActionBtn" class="theme-accent-btn text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition active:scale-95 cursor-pointer">
           Sign In / Register
         </button>
       </div>
@@ -179,9 +68,9 @@
     </div>
   </header>
 
-  <!-- THEME SETTINGS MODAL -->
-  <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
-    <div id="settingsModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 transition-all duration-300">
+  <!-- 4-THEME MODAL -->
+  <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div id="settingsModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
       <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
         <div>
           <h3 class="text-base font-bold text-slate-900">Appearance & Theme</h3>
@@ -191,7 +80,7 @@
       </div>
 
       <div class="grid grid-cols-1 gap-2.5">
-        <div onclick="setTheme('blue')" id="theme-card-blue" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-blue-500 cursor-pointer transition-all duration-200">
+        <div onclick="setTheme('blue')" id="theme-card-blue" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-blue-500 cursor-pointer transition">
           <div class="flex items-center space-x-3">
             <div class="flex -space-x-1">
               <span class="w-6 h-6 rounded-full bg-slate-900 border-2 border-white shadow-xs"></span>
@@ -206,7 +95,7 @@
           <span id="check-blue" class="text-xs font-bold text-blue-600">✓ Active</span>
         </div>
 
-        <div onclick="setTheme('coffee')" id="theme-card-coffee" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#8A5A36] cursor-pointer transition-all duration-200">
+        <div onclick="setTheme('coffee')" id="theme-card-coffee" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#8A5A36] cursor-pointer transition">
           <div class="flex items-center space-x-3">
             <div class="flex -space-x-1">
               <span class="w-6 h-6 rounded-full bg-[#231912] border-2 border-white shadow-xs"></span>
@@ -221,7 +110,7 @@
           <span id="check-coffee" class="hidden text-xs font-bold text-[#8A5A36]">✓ Active</span>
         </div>
 
-        <div onclick="setTheme('charcoal')" id="theme-card-charcoal" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#44403C] cursor-pointer transition-all duration-200">
+        <div onclick="setTheme('charcoal')" id="theme-card-charcoal" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#44403C] cursor-pointer transition">
           <div class="flex items-center space-x-3">
             <div class="flex -space-x-1">
               <span class="w-6 h-6 rounded-full bg-[#1C1917] border-2 border-white shadow-xs"></span>
@@ -236,7 +125,7 @@
           <span id="check-charcoal" class="hidden text-xs font-bold text-[#44403C]">✓ Active</span>
         </div>
 
-        <div onclick="setTheme('sage')" id="theme-card-sage" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#2E6A47] cursor-pointer transition-all duration-200">
+        <div onclick="setTheme('sage')" id="theme-card-sage" class="flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 hover:border-[#2E6A47] cursor-pointer transition">
           <div class="flex items-center space-x-3">
             <div class="flex -space-x-1">
               <span class="w-6 h-6 rounded-full bg-[#18291F] border-2 border-white shadow-xs"></span>
@@ -253,181 +142,184 @@
       </div>
 
       <div class="mt-5 pt-3 border-t border-slate-100 flex justify-end">
-        <button onclick="closeSettingsModal()" class="theme-accent-btn text-xs font-semibold px-4 py-2 rounded-xl transition-all duration-200">Done</button>
+        <button onclick="closeSettingsModal()" class="theme-accent-btn text-xs font-semibold px-4 py-2 rounded-xl transition">Done</button>
       </div>
     </div>
   </div>
 
-  <!-- RESOLUTION PROOF MODAL (CONTRACTOR DISPATCH) -->
-  <div id="resolveModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
-    <div id="resolveModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 transition-all duration-300">
-      <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
-        <div>
-          <h3 class="text-base font-bold text-slate-900">Upload "After Repair" Proof</h3>
-          <p class="text-xs text-slate-500" id="resolveTicketLabel">Attaching photo for work order verification.</p>
-        </div>
-        <button onclick="closeResolveModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold px-2">&times;</button>
-      </div>
-
-      <form id="resolveForm" class="space-y-4" onsubmit="submitResolution(event)">
-        <input type="hidden" id="resolveReportId" />
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Contractor Finished Photograph</label>
-          <input type="file" id="resolveImageInput" accept="image/*" required class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer" />
-        </div>
-        <button type="submit" id="resolveSubmitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">
-          Verify & Mark Ticket Resolved
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- AUTHENTICATION MODAL -->
-  <div id="authModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
-    <div id="authModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 transition-all duration-300">
+  <!-- AUTH MODAL -->
+  <div id="authModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div id="authModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
       <div class="flex border-b border-slate-200 mb-5">
-        <button id="tabLoginBtn" onclick="switchAuthTab('login')" class="flex-1 py-2.5 text-xs font-bold border-b-2 border-blue-600 text-blue-600 transition-all duration-200">Sign In</button>
-        <button id="tabRegisterBtn" onclick="switchAuthTab('register')" class="flex-1 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-all duration-200">Create Account</button>
-        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-700 text-lg px-2 transition-colors duration-150">&times;</button>
+        <button id="tabLoginBtn" onclick="switchAuthTab('login')" class="flex-1 py-2.5 text-xs font-bold border-b-2 border-blue-600 text-blue-600">Sign In</button>
+        <button id="tabRegisterBtn" onclick="switchAuthTab('register')" class="flex-1 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600">Create Account</button>
+        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-700 text-lg px-2">&times;</button>
       </div>
 
       <form id="loginForm" class="space-y-4" onsubmit="handleLogin(event)">
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
-          <input type="email" id="loginEmail" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 transition-all duration-200" placeholder="name@domain.com" />
+          <input type="email" id="loginEmail" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800" placeholder="citizen@citywatch.my" />
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
-          <div class="relative">
-            <input type="password" id="loginPassword" required class="w-full text-xs p-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 transition-all duration-200" placeholder="••••••••" />
-            <button type="button" onclick="togglePasswordVisibility('loginPassword', 'eyeIconLogin')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer">
-              <svg id="eyeIconLogin" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-            </button>
-          </div>
+          <input type="password" id="loginPassword" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800" placeholder="••••••••" />
         </div>
-        <button type="submit" class="w-full theme-accent-btn active:scale-[0.98] font-semibold py-2.5 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">Sign In</button>
+        <button type="submit" class="w-full theme-accent-btn font-semibold py-2.5 rounded-xl text-xs shadow-sm cursor-pointer">Sign In</button>
+        <p class="text-[11px] text-slate-400 text-center">Demo: citizen@citywatch.my (user123) | admin@dbkl.gov.my (admin123)</p>
       </form>
 
       <form id="registerForm" class="hidden space-y-3" onsubmit="handleRegister(event)">
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Full Name</label>
-          <input type="text" id="regName" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 transition-all duration-200" placeholder="e.g. John Doe" />
+          <input type="text" id="regName" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800" placeholder="e.g. John Doe" />
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
-          <input type="email" id="regEmail" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 transition-all duration-200" placeholder="e.g. user@gmail.com" />
+          <input type="email" id="regEmail" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800" placeholder="user@gmail.com" />
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Create Password</label>
-          <div class="relative">
-            <input type="password" id="regPassword" required class="w-full text-xs p-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 transition-all duration-200" placeholder="••••••••" />
-            <button type="button" onclick="togglePasswordVisibility('regPassword', 'eyeIconReg')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer">
-              <svg id="eyeIconReg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-            </button>
-          </div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+          <input type="password" id="regPassword" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800" placeholder="••••••••" />
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Account Role</label>
-          <select id="regRole" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 transition-all duration-200 cursor-pointer">
-            <option value="citizen">Public Citizen (Report & Track)</option>
-            <option value="admin">Municipal Authority (DBKL / Contractor Ops)</option>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Role</label>
+          <select id="regRole" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800">
+            <option value="citizen">Public Citizen</option>
+            <option value="admin">Municipal Authority</option>
           </select>
         </div>
-        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-semibold py-2.5 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">Register to Database</button>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-xs cursor-pointer">Create Account</button>
       </form>
 
-      <div id="authErrorBanner" class="hidden mt-3 p-2.5 rounded-lg text-xs bg-rose-50 text-rose-700 border border-rose-200 text-center view-transition"></div>
+      <div id="authErrorBanner" class="hidden mt-3 p-2.5 rounded-lg text-xs bg-rose-50 text-rose-700 border border-rose-200 text-center"></div>
     </div>
   </div>
 
-  <!-- Main Content Container -->
+  <!-- MAIN CONTAINER -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 relative">
 
-    <!-- VIEW 1: CITIZEN REPORT FORM & LIVE MAP -->
+    <!-- VIEW 1: REPORT & MAP -->
     <div id="view-report" class="grid grid-cols-1 lg:grid-cols-12 gap-6 view-transition">
       
-      <!-- Submission Form Sidebar -->
-      <div class="theme-card lg:col-span-4 p-5 rounded-2xl shadow-sm hover:shadow-md border transition-all duration-300">
+      <!-- Reporting Sidebar -->
+      <div class="theme-card lg:col-span-4 p-5 rounded-2xl shadow-sm border">
         <h2 class="text-base font-bold mb-1">Report Public Hazard</h2>
         <p class="theme-text-muted text-xs mb-4">Multi-hazard AI verification with 10m spatial deduplication.</p>
 
         <form id="incidentForm" class="space-y-4">
           
-          <!-- Hazard Category Selector -->
           <div>
             <label class="block text-xs font-semibold uppercase tracking-wider mb-1">Hazard Category</label>
-            <select id="categoryInput" class="theme-input w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 font-medium transition-all duration-200 cursor-pointer">
+            <select id="categoryInput" class="theme-input w-full text-xs p-2.5 border rounded-lg font-medium cursor-pointer">
               <option value="Road Surface (Pothole / Sinkhole / Crack)">🕳️ Road Surface (Pothole / Sinkhole / Crack)</option>
               <option value="Fallen Tree / Hanging Branch Obstruction">🌳 Fallen Tree / Hanging Branch Obstruction</option>
               <option value="Open Manhole / Missing Drain Grate">⚠️ Open Manhole / Missing Drain Grate</option>
               <option value="Traffic Light / Street Light Outage">🚦 Traffic Light / Street Light Outage</option>
               <option value="Illegal Waste Dumping / Blocked Drainage">🗑️ Illegal Waste Dumping / Blocked Drainage</option>
-              <option value="General Roadside Hazard">🚧 General Roadside Hazard / Infrastructure</option>
             </select>
           </div>
 
-          <!-- Non-Intimidating GPS Location Inputs -->
+          <!-- GPS Telemetry with UPGRADE 1: Reverse Geocoding Address Display -->
           <div>
             <div class="flex justify-between items-center mb-1">
               <label class="block text-xs font-semibold uppercase tracking-wider">GPS Telemetry</label>
               <span class="text-[10px] text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Auto-Locked</span>
             </div>
-            <button type="button" onclick="detectUserLocation()" class="theme-soft-badge w-full mb-2 active:scale-[0.98] border py-2 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all duration-200 cursor-pointer shadow-xs">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <button type="button" onclick="detectUserLocation()" class="theme-soft-badge w-full mb-2 border py-2 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
               <span>Calibrate Current GPS</span>
             </button>
             <div class="grid grid-cols-2 gap-2">
-              <div class="relative">
-                <input type="number" step="any" id="latInput" placeholder="Latitude" readonly required class="theme-input w-full text-xs p-2.5 pr-7 border rounded-lg bg-slate-50/70 font-mono text-slate-500 cursor-default" />
-                <span class="absolute right-2.5 top-2.5 text-slate-400 text-[10px]" title="Auto-filled via GPS">🔒</span>
-              </div>
-              <div class="relative">
-                <input type="number" step="any" id="lngInput" placeholder="Longitude" readonly required class="theme-input w-full text-xs p-2.5 pr-7 border rounded-lg bg-slate-50/70 font-mono text-slate-500 cursor-default" />
-                <span class="absolute right-2.5 top-2.5 text-slate-400 text-[10px]" title="Auto-filled via GPS">🔒</span>
-              </div>
+              <input type="number" step="any" id="latInput" placeholder="Latitude" readonly required class="theme-input w-full text-xs p-2.5 border rounded-lg bg-slate-50 font-mono text-slate-500" />
+              <input type="number" step="any" id="lngInput" placeholder="Longitude" readonly required class="theme-input w-full text-xs p-2.5 border rounded-lg bg-slate-50 font-mono text-slate-500" />
             </div>
-            <p class="theme-text-muted text-[11px] mt-1">Tap the map to reposition pin coordinates.</p>
+            
+            <!-- UPGRADE 1: Street Address Badge -->
+            <p id="addressDisplay" class="text-[11px] text-blue-600 font-medium mt-1.5 truncate">
+              📍 Street address will appear after calibrating GPS
+            </p>
           </div>
 
-          <!-- Drag & Drop Photo Upload -->
+          <!-- Photograph Container -->
           <div>
             <label class="block text-xs font-semibold uppercase tracking-wider mb-1">Incident Photograph</label>
-            <div id="dropZone" onclick="document.getElementById('imageInput').click()" class="theme-input relative border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[130px] group shadow-inner">
-              <input type="file" id="imageInput" accept="image/*" required class="hidden" />
+            <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleNativeFileChange(this)" />
 
-              <div id="dropPrompt" class="flex flex-col items-center transition-all duration-200">
-                <svg class="w-8 h-8 opacity-60 group-hover:scale-110 mb-1.5 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                <p class="text-xs font-semibold transition-colors duration-200">Click to browse or drag & drop photo</p>
-                <p class="theme-text-muted text-[11px] mt-0.5">JPG, PNG, or WEBP up to 10MB</p>
+            <div
+              id="dropZone"
+              onclick="handleDropZoneClick(event)"
+              class="relative border-2 border-dashed border-slate-300 rounded-2xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center min-h-[145px] bg-slate-50 hover:bg-slate-100"
+            >
+              <div id="guestLockPrompt" class="flex flex-col items-center py-2">
+                <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mb-2 shadow-xs">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                  </svg>
+                </div>
+                <p class="text-xs font-bold text-slate-800">Sign In Required to Upload</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">Click here to sign in as a verified citizen</p>
+                <span class="mt-2 text-[10px] font-semibold bg-blue-600 text-white px-3 py-1 rounded-full shadow-sm hover:bg-blue-700">
+                  Sign In / Register
+                </span>
               </div>
 
-              <div id="imagePreviewContainer" class="hidden w-full h-36 relative rounded-xl overflow-hidden border transition-all duration-300">
-                <img id="imagePreview" src="" alt="Incident Preview" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
-                <span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-md backdrop-blur-sm">Click / Drop to Change</span>
+              <div id="dropPrompt" class="hidden flex-col items-center py-2">
+                <div class="w-12 h-12 rounded-full bg-blue-100/70 text-blue-600 flex items-center justify-center mb-2 shadow-xs">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                  </svg>
+                </div>
+                <p class="text-xs font-bold text-slate-800">Click to browse or drag & drop photo</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">JPG, PNG, or WEBP up to 10MB</p>
+              </div>
+
+              <div id="imagePreviewContainer" class="hidden w-full h-36 relative rounded-xl overflow-hidden border border-slate-200">
+                <img id="imagePreview" src="" alt="Incident Preview" class="w-full h-full object-cover" />
+                <div class="absolute bottom-2 inset-x-2 flex justify-between items-center px-1">
+                  <span class="bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-md backdrop-blur-sm">
+                    Click to Change
+                  </span>
+                  <button type="button" id="removeImageBtn" onclick="removeSelectedImage(event)" class="bg-rose-600 hover:bg-rose-700 text-white text-[10px] px-2.5 py-0.5 rounded-md shadow-sm font-bold transition">
+                    ✕ Remove
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Remarks -->
+          <!-- Remarks with UPGRADE 3: Voice Dictation Button -->
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider mb-1">Remarks</label>
-            <textarea id="notesInput" rows="2" placeholder="e.g., Deep pothole along left lane after rain" class="theme-input w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 transition-all duration-200"></textarea>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-xs font-semibold uppercase tracking-wider">Remarks</label>
+              <!-- UPGRADE 3: Speech to Text Trigger -->
+              <button type="button" id="voiceDictationBtn" onclick="toggleVoiceDictation()" class="text-[11px] text-blue-600 hover:text-blue-700 font-semibold flex items-center space-x-1 cursor-pointer">
+                <span>🎙️ Speak Remarks</span>
+              </button>
+            </div>
+            <textarea id="notesInput" rows="2" placeholder="e.g., Deep pothole along left lane after rain" class="theme-input w-full text-xs p-2.5 border rounded-lg"></textarea>
           </div>
 
-          <button type="submit" id="submitBtn" class="theme-accent-btn w-full active:scale-[0.98] font-semibold py-2.5 rounded-xl text-xs shadow-sm hover:shadow transition-all duration-200 cursor-pointer">
+          <button type="submit" id="submitBtn" class="theme-accent-btn w-full font-semibold py-2.5 rounded-xl text-xs shadow-sm cursor-pointer">
             Submit for AI Verification
           </button>
         </form>
 
-        <div id="feedbackBanner" class="hidden mt-4 p-3 rounded-xl text-xs font-medium border view-transition"></div>
+        <div id="feedbackBanner" class="hidden mt-4 p-3 rounded-xl text-xs font-medium border"></div>
       </div>
 
-      <!-- Interactive Map Window -->
-      <div class="theme-card lg:col-span-8 p-2 rounded-2xl shadow-sm hover:shadow-md border relative min-h-[460px] flex flex-col transition-all duration-300">
+      <!-- Live Map Container with UPGRADE 2: Heatmap Toggle Button -->
+      <div class="theme-card lg:col-span-8 p-2 rounded-2xl shadow-sm border relative min-h-[460px] flex flex-col">
         <div class="flex flex-wrap justify-between items-center px-3 py-2 border-b gap-2">
           <div class="flex items-center space-x-2">
             <span class="font-bold text-xs uppercase tracking-wider">Live Spatial Map</span>
-            <span id="mapReportCountBadge" class="theme-soft-badge text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all duration-300">0 Reports</span>
+            <span id="mapReportCountBadge" class="theme-soft-badge text-[10px] font-semibold px-2 py-0.5 rounded-full border">0 Reports</span>
+            
+            <!-- UPGRADE 2: Heatmap Toggle Switch -->
+            <button type="button" id="btnToggleHeatmap" onclick="toggleHeatmapView()" class="text-[10px] font-bold px-2 py-0.5 rounded border bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer ml-1">
+              🔥 Heatmap Off
+            </button>
           </div>
 
           <div class="theme-text-muted flex items-center space-x-3 text-[11px]">
@@ -437,79 +329,79 @@
           </div>
         </div>
 
-        <div id="map" class="w-full flex-1 rounded-xl z-0 transition-opacity duration-300" style="min-height: 440px;"></div>
+        <div id="map" class="w-full flex-1 rounded-xl z-0" style="min-height: 440px;"></div>
       </div>
 
     </div>
 
-    <!-- VIEW 2: CITIZEN "MY REPORTS" HISTORY -->
-    <div id="view-myreports" class="theme-card hidden max-w-4xl mx-auto p-6 rounded-2xl shadow-sm hover:shadow-md border transition-all duration-300">
+    <!-- VIEW 2: CITIZEN MY REPORTS -->
+    <div id="view-myreports" class="theme-card hidden max-w-4xl mx-auto p-6 rounded-2xl shadow-sm border">
       <div class="flex justify-between items-center mb-4 pb-3 border-b">
         <div>
           <h2 class="text-base font-bold">My Incident Submissions</h2>
           <p class="theme-text-muted text-xs" id="myReportsSubtitle">Showing reports saved for current user.</p>
         </div>
-        <span id="myReportCountBadge" class="theme-soft-badge border text-xs font-semibold px-2.5 py-1 rounded-full transition-all duration-200">0 Reports</span>
+        <span id="myReportCountBadge" class="theme-soft-badge border text-xs font-semibold px-2.5 py-1 rounded-full">0 Reports</span>
       </div>
       <div id="myReportsList" class="space-y-3"></div>
     </div>
 
-    <!-- VIEW 3: PUBLIC TICKET TRACKER -->
-    <div id="view-track" class="theme-card hidden max-w-xl mx-auto p-6 rounded-2xl shadow-sm hover:shadow-md border transition-all duration-300">
+    <!-- VIEW 3: TRACK TICKET -->
+    <div id="view-track" class="theme-card hidden max-w-xl mx-auto p-6 rounded-2xl shadow-sm border">
       <div class="text-center mb-6">
         <h2 class="text-base font-bold">Track Hazard Milestone</h2>
         <p class="theme-text-muted text-xs mt-1">Enter a ticket code to view contractor repair progress.</p>
       </div>
       <div class="flex space-x-2 mb-6">
-        <input type="text" id="trackInput" placeholder="Enter Ticket Code (e.g. REP-8F12B0)" class="theme-input flex-1 text-xs p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-400 uppercase font-mono transition-all duration-200" />
-        <button onclick="trackTicket()" class="theme-accent-btn active:scale-95 font-semibold px-5 rounded-xl text-xs transition-all duration-200 shadow-sm cursor-pointer">Track</button>
+        <input type="text" id="trackInput" placeholder="Enter Ticket Code (e.g. REP-8F12B0)" class="theme-input flex-1 text-xs p-3 border rounded-xl uppercase font-mono" />
+        <button onclick="trackTicket()" class="theme-accent-btn font-semibold px-5 rounded-xl text-xs cursor-pointer">Track</button>
       </div>
       <div id="trackResult" class="hidden space-y-4 pt-4 border-t"></div>
     </div>
 
-    <!-- VIEW 4: MUNICIPAL ADMIN COMMAND PORTAL -->
+    <!-- VIEW 4: COUNCIL OPS -->
     <div id="view-admin" class="hidden space-y-6">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="theme-card p-4 rounded-xl border shadow-sm hover:shadow transition-all duration-200">
+        <div class="theme-card p-4 rounded-xl border shadow-sm">
           <p class="theme-text-muted text-[11px] font-semibold uppercase tracking-wider">Total Open Tickets</p>
           <p id="kpiTotal" class="text-2xl font-black mt-1">0</p>
         </div>
-        <div class="theme-card p-4 rounded-xl border shadow-sm hover:shadow transition-all duration-200">
+        <div class="theme-card p-4 rounded-xl border shadow-sm">
           <p class="text-[11px] font-semibold uppercase tracking-wider text-rose-500">Critical Priority</p>
           <p id="kpiCritical" class="text-2xl font-black text-rose-600 mt-1">0</p>
         </div>
-        <div class="theme-card p-4 rounded-xl border shadow-sm hover:shadow transition-all duration-200">
-          <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-500">10m Duplicates & Upvotes</p>
+        <div class="theme-card p-4 rounded-xl border shadow-sm">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-500">Total Upvotes</p>
           <p id="kpiDuplicates" class="text-2xl font-black text-blue-600 mt-1">0</p>
         </div>
-        <div class="theme-card p-4 rounded-xl border shadow-sm hover:shadow transition-all duration-200">
+        <div class="theme-card p-4 rounded-xl border shadow-sm">
           <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-500">Resolved Work Orders</p>
           <p id="kpiResolved" class="text-2xl font-black text-emerald-600 mt-1">0</p>
         </div>
       </div>
 
-      <div class="theme-card rounded-2xl shadow-sm hover:shadow-md border overflow-hidden transition-all duration-300">
-        <div class="p-4 border-b flex justify-between items-center opacity-95">
+      <div class="theme-card rounded-2xl shadow-sm border overflow-hidden">
+        <div class="p-4 border-b flex justify-between items-center">
           <div>
             <h3 class="text-sm font-bold">Contractor Dispatch Operations</h3>
             <p class="theme-text-muted text-xs">Verify resolutions and manage work orders.</p>
           </div>
-          <button onclick="loadAdminReports()" class="theme-soft-badge border text-xs active:scale-95 px-3 py-1.5 rounded-lg font-medium transition-all duration-200 cursor-pointer shadow-xs">Refresh</button>
+          <button onclick="loadAdminReports()" class="theme-soft-badge border text-xs px-3 py-1.5 rounded-lg font-medium cursor-pointer">Refresh</button>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
-            <thead class="border-b uppercase font-semibold opacity-75">
+            <thead class="border-b uppercase font-semibold">
               <tr>
                 <th class="py-3 px-4">Ticket</th>
-                <th class="py-3 px-4">Reported By</th>
-                <th class="py-3 px-4">Hazard Category</th>
+                <th class="py-3 px-4">Reporter</th>
+                <th class="py-3 px-4">Category</th>
                 <th class="py-3 px-4">Severity</th>
-                <th class="py-3 px-4">Upvotes</th>
+                <th class="py-3 px-4">Endorsements</th>
                 <th class="py-3 px-4">Status</th>
                 <th class="py-3 px-4 text-right">Dispatch Action</th>
               </tr>
             </thead>
-            <tbody id="adminTableBody" class="divide-y opacity-90"></tbody>
+            <tbody id="adminTableBody" class="divide-y"></tbody>
           </table>
         </div>
       </div>
@@ -517,19 +409,33 @@
 
   </main>
 
+  <!-- JAVASCRIPT ENGINE -->
   <script>
     let currentUser = null;
     let currentTheme = 'blue';
     let map, splitMapMarker, activeReports = [];
     let markersLayer = L.layerGroup();
 
+    // UPGRADE 2: Heatmap Engine State
+    let heatLayer = null;
+    let isHeatmapActive = false;
+
+    // UPGRADE 3: Voice Recognition State
+    let recognition = null;
+    let isListening = false;
+
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('imageInput');
     const previewContainer = document.getElementById('imagePreviewContainer');
+    const guestPrompt = document.getElementById('guestLockPrompt');
     const dropPrompt = document.getElementById('dropPrompt');
     const imagePreview = document.getElementById('imagePreview');
 
-    // Theme Engine
+    function isUserSignedIn() {
+      return currentUser !== null && currentUser.email;
+    }
+
+    // 1. Theme Engine
     function setTheme(themeName) {
       currentTheme = themeName;
       document.body.setAttribute('data-theme', themeName);
@@ -554,8 +460,7 @@
     }
 
     function openSettingsModal() {
-      const modal = document.getElementById('settingsModal');
-      modal.classList.remove('hidden');
+      document.getElementById('settingsModal').classList.remove('hidden');
       document.getElementById('settingsModalCard').classList.add('modal-enter');
     }
 
@@ -563,23 +468,125 @@
       document.getElementById('settingsModal').classList.add('hidden');
     }
 
-    // Password Toggle
-    function togglePasswordVisibility(inputId, iconId) {
-      const input = document.getElementById(inputId);
-      const icon = document.getElementById(iconId);
+    // 2. Incident Photograph Preview Engine
+    function updateUploadUI() {
+      const signedIn = isUserSignedIn();
+      const hasPreview = !previewContainer.classList.contains('hidden');
 
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/>`;
+      if (signedIn) {
+        guestPrompt.classList.add('hidden');
+        if (!hasPreview) {
+          dropPrompt.classList.remove('hidden');
+          dropPrompt.classList.add('flex');
+        }
+        dropZone.classList.remove('border-slate-300', 'bg-slate-50');
+        dropZone.classList.add('border-blue-400', 'bg-blue-50/20');
       } else {
-        input.type = 'password';
-        icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>`;
+        removeSelectedImage();
+        guestPrompt.classList.remove('hidden');
+        dropPrompt.classList.add('hidden');
+        dropPrompt.classList.remove('flex');
+        dropZone.classList.remove('border-blue-400', 'bg-blue-50/20');
+        dropZone.classList.add('border-slate-300', 'bg-slate-50');
       }
     }
 
-    // Leaflet Map Initialization with Auto-Focus Focus
+    function handleDropZoneClick(e) {
+      if (e && e.target && e.target.closest('#removeImageBtn')) return;
+      if (!isUserSignedIn()) {
+        alert("Authentication Required: Please sign in or register to upload incident photos.");
+        openAuthModal('login');
+        return;
+      }
+      fileInput.click();
+    }
+
+    function handleNativeFileChange(input) {
+      if (input.files && input.files.length > 0) {
+        processAndPreviewFile(input.files[0]);
+      }
+    }
+
+    function processAndPreviewFile(file) {
+      if (!file) return;
+
+      const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'];
+      const fileExt = file.name.split('.').pop().toLowerCase();
+      const isMimeImage = file.type && file.type.startsWith('image/');
+      
+      if (!isMimeImage && !validExtensions.includes(fileExt)) {
+        alert("Please select a valid image file (JPG, PNG, or WEBP).");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        imagePreview.src = e.target.result;
+        dropPrompt.classList.add('hidden');
+        dropPrompt.classList.remove('flex');
+        guestPrompt.classList.add('hidden');
+        previewContainer.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeSelectedImage(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      fileInput.value = "";
+      imagePreview.src = "";
+      previewContainer.classList.add('hidden');
+
+      if (isUserSignedIn()) {
+        dropPrompt.classList.remove('hidden');
+        dropPrompt.classList.add('flex');
+        guestPrompt.classList.add('hidden');
+      } else {
+        guestPrompt.classList.remove('hidden');
+        dropPrompt.classList.add('hidden');
+        dropPrompt.classList.remove('flex');
+      }
+    }
+
+    ['dragenter', 'dragover'].forEach(name => {
+      dropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isUserSignedIn()) dropZone.classList.add('drag-active');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(name => {
+      dropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('drag-active');
+      });
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      if (!isUserSignedIn()) {
+        alert("Authentication Required: Please sign in before dropping photos.");
+        openAuthModal('login');
+        return;
+      }
+      const droppedFiles = e.dataTransfer.files;
+      if (droppedFiles && droppedFiles.length > 0) {
+        try {
+          const dt = new DataTransfer();
+          dt.items.add(droppedFiles[0]);
+          fileInput.files = dt.files;
+        } catch (err) {
+          try { fileInput.files = droppedFiles; } catch (e2) {}
+        }
+        processAndPreviewFile(droppedFiles[0]);
+      }
+    });
+
+    // 3. Map & UPGRADE 1: Reverse Geocoding Integration
     function initMap() {
-      // Default to Kuala Lumpur urban center at zoom level 12
       map = L.map('map').setView([3.1390, 101.6869], 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -589,9 +596,12 @@
       markersLayer.addTo(map);
 
       map.on('click', function(e) {
-        document.getElementById('latInput').value = e.latlng.lat.toFixed(6);
-        document.getElementById('lngInput').value = e.latlng.lng.toFixed(6);
+        const lat = e.latlng.lat.toFixed(6);
+        const lng = e.latlng.lng.toFixed(6);
+        document.getElementById('latInput').value = lat;
+        document.getElementById('lngInput').value = lng;
         placeTempPin(e.latlng.lat, e.latlng.lng);
+        fetchStreetAddress(lat, lng); // UPGRADE 1
       });
     }
 
@@ -610,78 +620,268 @@
             document.getElementById('lngInput').value = lng;
             map.setView([lat, lng], 15);
             placeTempPin(lat, lng);
+            fetchStreetAddress(lat, lng); // UPGRADE 1
           },
           (err) => alert("GPS detection failed: " + err.message)
         );
       }
     }
 
-    // Drag & Drop Handlers
-    function showFilePreview(file) {
-      if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          imagePreview.src = e.target.result;
-          dropPrompt.classList.add('hidden');
-          previewContainer.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
+    // UPGRADE 1: Reverse Geocoding Address Fetcher
+    async function fetchStreetAddress(lat, lng) {
+      const display = document.getElementById('addressDisplay');
+      display.textContent = "📍 Locating street address...";
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+        const data = await res.json();
+        display.textContent = "📍 " + (data.display_name || "Street address not found");
+      } catch (e) {
+        display.textContent = `📍 Coordinates locked: ${lat}, ${lng}`;
       }
     }
 
-    fileInput.addEventListener('change', function(e) {
-      if (e.target.files.length > 0) showFilePreview(e.target.files[0]);
-    });
+    // UPGRADE 2: Live Heatmap Layer Toggle
+    function toggleHeatmapView() {
+      isHeatmapActive = !isHeatmapActive;
+      const btn = document.getElementById('btnToggleHeatmap');
 
-    ['dragenter', 'dragover'].forEach(name => {
-      dropZone.addEventListener(name, (e) => {
-        e.preventDefault(); e.stopPropagation();
-        dropZone.classList.add('drag-active');
-      });
-    });
+      if (isHeatmapActive) {
+        btn.textContent = "🔥 Heatmap On";
+        btn.className = "text-[10px] font-bold px-2 py-0.5 rounded border bg-rose-600 text-white transition cursor-pointer ml-1";
+        markersLayer.clearLayers();
 
-    ['dragleave', 'drop'].forEach(name => {
-      dropZone.addEventListener(name, (e) => {
-        e.preventDefault(); e.stopPropagation();
-        dropZone.classList.remove('drag-active');
-      });
-    });
+        const points = activeReports.map(r => [
+          r.latitude,
+          r.longitude,
+          r.severity === 'Critical' ? 1.0 : (r.severity === 'Medium' ? 0.6 : 0.3)
+        ]);
 
-    dropZone.addEventListener('drop', (e) => {
-      const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        fileInput.files = files;
-        showFilePreview(files[0]);
+        heatLayer = L.heatLayer(points, { radius: 28, blur: 18, maxZoom: 16 }).addTo(map);
+      } else {
+        btn.textContent = "🔥 Heatmap Off";
+        btn.className = "text-[10px] font-bold px-2 py-0.5 rounded border bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer ml-1";
+        if (heatLayer) map.removeLayer(heatLayer);
+        loadReports();
+      }
+    }
+
+    // UPGRADE 3: Native Voice Dictation
+    function toggleVoiceDictation() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert("Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.");
+        return;
+      }
+
+      const btn = document.getElementById('voiceDictationBtn');
+      const textarea = document.getElementById('notesInput');
+
+      if (isListening && recognition) {
+        recognition.stop();
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        isListening = true;
+        btn.innerHTML = `<span class="text-rose-600 font-bold animate-pulse">🔴 Listening...</span>`;
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        textarea.value = (textarea.value ? textarea.value + " " : "") + transcript;
+      };
+
+      recognition.onerror = () => resetVoiceBtn();
+      recognition.onend = () => resetVoiceBtn();
+
+      recognition.start();
+    }
+
+    function resetVoiceBtn() {
+      isListening = false;
+      document.getElementById('voiceDictationBtn').innerHTML = `<span>🎙️ Speak Remarks</span>`;
+    }
+
+    // Upvote/Downvote Toggle with Anti-Spam Guard
+    async function handleUpvoteClick(reportId) {
+      if (!isUserSignedIn()) {
+        alert("Action Blocked: You must be signed in to endorse or upvote reports. This prevents spam and prank votes.");
+        openAuthModal('login');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/v1/report/${reportId}/upvote?user_email=${encodeURIComponent(currentUser.email)}`, {
+          method: 'POST'
+        });
+        const data = await res.json();
+        if (data.success) {
+          await loadReports();
+        } else {
+          alert(data.detail || "Unable to register upvote.");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadReports() {
+      try {
+        const emailParam = currentUser ? `?user_email=${encodeURIComponent(currentUser.email)}` : "";
+        const res = await fetch(`/api/v1/reports${emailParam}`);
+        const json = await res.json();
+        activeReports = json.data;
+
+        document.getElementById('mapReportCountBadge').textContent = `${json.count} Reports`;
+        
+        if (isHeatmapActive) return; // Keep heatmap rendered if active
+
+        markersLayer.clearLayers();
+
+        activeReports.forEach(r => {
+          let markerColor = "#10b981";
+          if (r.status !== "Resolved") {
+            markerColor = r.severity === "Critical" ? "#ef4444" : "#f59e0b";
+          }
+
+          const circle = L.circleMarker([r.latitude, r.longitude], {
+            radius: 8, fillColor: markerColor, color: "#ffffff", weight: 2, fillOpacity: 0.95
+          });
+
+          let upvoteButtonHtml = '';
+          if (r.status !== "Resolved") {
+            if (r.has_upvoted) {
+              upvoteButtonHtml = `
+                <button onclick="handleUpvoteClick('${r.report_id}')" class="w-full mt-2.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-1.5 px-2 rounded-lg text-xs flex items-center justify-center space-x-1.5 shadow-sm transition active:scale-95 cursor-pointer">
+                  <span>✓ You Endorsed This</span>
+                  <span class="bg-black/15 text-slate-900 font-black px-1.5 py-0.5 rounded-full text-[10px]">${r.upvote_count || 0}</span>
+                  <span class="text-[9px] opacity-75">(Click to Cancel)</span>
+                </button>
+              `;
+            } else {
+              upvoteButtonHtml = `
+                <button onclick="handleUpvoteClick('${r.report_id}')" class="w-full mt-2.5 bg-slate-100 hover:bg-amber-100 text-slate-800 border border-slate-300 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition active:scale-95 cursor-pointer">
+                  <span>👍 I see this too!</span>
+                  <span class="bg-slate-200 text-slate-800 font-bold px-1.5 py-0.5 rounded-full text-[10px]">+${r.upvote_count || 0}</span>
+                </button>
+              `;
+            }
+          } else {
+            upvoteButtonHtml = `
+              <div class="mt-2 p-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-[11px] font-semibold text-center">
+                ✓ Repaired & Closed
+              </div>
+            `;
+          }
+
+          circle.bindPopup(`
+            <div class="w-64 font-sans text-xs">
+              <img src="${r.image_url}" class="w-full h-32 object-cover" />
+              <div class="p-3 bg-white">
+                <div class="flex justify-between items-center mb-1">
+                  <span class="font-bold text-slate-900">${r.report_id}</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                    r.status === 'Resolved' ? 'bg-emerald-100 text-emerald-800' : (r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800')
+                  }">${r.status === 'Resolved' ? 'Resolved' : r.severity}</span>
+                </div>
+                <p class="font-semibold text-slate-800">${r.hazard_type}</p>
+                <p class="text-slate-500 text-[11px] mt-1">${r.notes}</p>
+                ${upvoteButtonHtml}
+                <div class="mt-2 pt-2 border-t border-slate-100 flex justify-between text-[10px] text-slate-400">
+                  <span>Status: <b>${r.status}</b></span>
+                  <span>Endorsements: <b>${r.upvote_count || 0}</b></span>
+                </div>
+              </div>
+            </div>
+          `);
+
+          markersLayer.addLayer(circle);
+        });
+
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // 4. Incident Submission
+    document.getElementById('incidentForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      if (!isUserSignedIn()) {
+        alert("Submission Blocked: You must be signed in to submit hazard reports.");
+        openAuthModal('login');
+        return;
+      }
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert("Please select or drop an incident photo first.");
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      const banner = document.getElementById('feedbackBanner');
+      submitBtn.disabled = true;
+      submitBtn.textContent = "AI Scanning Hazard...";
+
+      const formData = new FormData();
+      formData.append("latitude", document.getElementById('latInput').value);
+      formData.append("longitude", document.getElementById('lngInput').value);
+      formData.append("category", document.getElementById('categoryInput').value);
+      formData.append("notes", document.getElementById('notesInput').value);
+      formData.append("reported_by", currentUser.email);
+      formData.append("image", fileInput.files[0]);
+
+      try {
+        const response = await fetch('/api/v1/report', { method: 'POST', body: formData });
+        const res = await response.json();
+        if (!response.ok) throw new Error(res.detail || "Submission failed.");
+
+        banner.className = "mt-4 p-3 rounded-xl text-xs font-medium border bg-emerald-50 text-emerald-800 border-emerald-200 block";
+        banner.innerHTML = `
+          <b>Success!</b> Ticket: <b>${res.ticket.report_id}</b><br>
+          AI Assessment: <b>${res.ticket.hazard_type}</b> (${res.ticket.severity} Priority)<br>
+          ${res.is_duplicate ? '📍 Merged into existing duplicate ticket within 10m.' : '✓ Plotted on live map.'}
+        `;
+        document.getElementById('incidentForm').reset();
+        document.getElementById('addressDisplay').textContent = "📍 Street address will appear after calibrating GPS";
+        removeSelectedImage();
+        updateUploadUI();
+        loadReports();
+      } catch (err) {
+        banner.className = "mt-4 p-3 rounded-xl text-xs font-medium border bg-rose-50 text-rose-700 border-rose-200 block";
+        banner.textContent = "Error: " + err.message;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit for AI Verification";
       }
     });
 
-    // View Switching
+    // 5. Navigation & SPA Routing
     function switchView(viewName) {
       if (viewName === 'admin' && (!currentUser || currentUser.role !== 'admin')) {
-        alert("Restricted: Municipal Authority account required. Sign in or register as an Admin.");
-        openAuthModal();
+        alert("Restricted: Municipal Authority account required.");
+        openAuthModal('login');
         return;
       }
 
       ['report', 'myreports', 'track', 'admin'].forEach(v => {
-        const el = document.getElementById(`view-${v}`);
-        el.classList.add('hidden');
-        el.classList.remove('view-transition');
+        document.getElementById(`view-${v}`).classList.add('hidden');
         const navBtn = document.getElementById(`nav-${v}`);
-        navBtn.classList.remove('theme-accent-btn', 'text-white', 'shadow-sm');
+        navBtn.classList.remove('theme-accent-btn', 'text-white');
         navBtn.classList.add('text-slate-300');
       });
 
-      const targetEl = document.getElementById(`view-${viewName}`);
-      targetEl.classList.remove('hidden');
-      void targetEl.offsetWidth;
-      targetEl.classList.add('view-transition');
-
+      document.getElementById(`view-${viewName}`).classList.remove('hidden');
       const activeNav = document.getElementById(`nav-${viewName}`);
-      activeNav.classList.add('theme-accent-btn', 'text-white', 'shadow-sm');
+      activeNav.classList.add('theme-accent-btn', 'text-white');
       activeNav.classList.remove('text-slate-300');
 
-      if (viewName === 'report') setTimeout(() => map.invalidateSize(), 220);
+      if (viewName === 'report') setTimeout(() => map.invalidateSize(), 200);
       if (viewName === 'myreports') loadMyReports();
       if (viewName === 'admin') {
         loadAdminStats();
@@ -689,11 +889,11 @@
       }
     }
 
-    // Modal Operations
-    function openAuthModal() {
+    // 6. Authentication Handlers
+    function openAuthModal(tab = 'login') {
       document.getElementById('authModal').classList.remove('hidden');
-      document.getElementById('authModalCard').classList.add('modal-enter');
       document.getElementById('authErrorBanner').classList.add('hidden');
+      switchAuthTab(tab);
     }
 
     function closeAuthModal() {
@@ -705,13 +905,13 @@
       if (tab === 'login') {
         document.getElementById('loginForm').classList.remove('hidden');
         document.getElementById('registerForm').classList.add('hidden');
-        document.getElementById('tabLoginBtn').className = "flex-1 py-2.5 text-xs font-bold border-b-2 border-blue-600 text-blue-600 transition-all duration-200";
-        document.getElementById('tabRegisterBtn').className = "flex-1 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-all duration-200";
+        document.getElementById('tabLoginBtn').className = "flex-1 py-2.5 text-xs font-bold border-b-2 border-blue-600 text-blue-600";
+        document.getElementById('tabRegisterBtn').className = "flex-1 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600";
       } else {
         document.getElementById('loginForm').classList.add('hidden');
         document.getElementById('registerForm').classList.remove('hidden');
-        document.getElementById('tabRegisterBtn').className = "flex-1 py-2.5 text-xs font-bold border-b-2 border-emerald-600 text-emerald-600 transition-all duration-200";
-        document.getElementById('tabLoginBtn').className = "flex-1 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-all duration-200";
+        document.getElementById('tabRegisterBtn').className = "flex-1 py-2.5 text-xs font-bold border-b-2 border-emerald-600 text-emerald-600";
+        document.getElementById('tabLoginBtn').className = "flex-1 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600";
       }
     }
 
@@ -731,7 +931,9 @@
         setUserSession(data.user);
         closeAuthModal();
       } catch (err) {
-        showAuthError(err.message);
+        const b = document.getElementById('authErrorBanner');
+        b.textContent = err.message;
+        b.classList.remove('hidden');
       }
     }
 
@@ -750,233 +952,56 @@
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Registration failed.");
-        alert("Account created in SQL database! Logging you in...");
         setUserSession(data.user);
         closeAuthModal();
       } catch (err) {
-        showAuthError(err.message);
+        const b = document.getElementById('authErrorBanner');
+        b.textContent = err.message;
+        b.classList.remove('hidden');
       }
-    }
-
-    function showAuthError(msg) {
-      const banner = document.getElementById('authErrorBanner');
-      banner.textContent = msg;
-      banner.classList.remove('hidden');
     }
 
     function setUserSession(user) {
       currentUser = user;
-      if (user) {
-        localStorage.setItem('cw_user', JSON.stringify(user));
-        document.getElementById('userNameDisplay').textContent = `${user.full_name} (${user.role.toUpperCase()})`;
-        
-        const authBtn = document.getElementById('authActionBtn');
-        authBtn.textContent = "Sign Out";
-        authBtn.className = "text-xs bg-rose-600 hover:bg-rose-700 active:scale-95 font-semibold px-3.5 py-1.5 rounded-lg text-white shadow-sm transition-all duration-200 cursor-pointer";
-        
-        authBtn.onclick = () => {
-          localStorage.removeItem('cw_user');
-          currentUser = null;
-          document.getElementById('userNameDisplay').textContent = "Guest Citizen";
-          authBtn.textContent = "Sign In / Register";
-          authBtn.className = "theme-accent-btn text-xs active:scale-95 font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition-all duration-200 cursor-pointer";
-          authBtn.onclick = openAuthModal;
-          switchView('report');
-        };
+      localStorage.setItem('cw_user', JSON.stringify(user));
 
-        if (currentUser.role === 'admin') switchView('admin');
-      }
+      document.getElementById('userNameDisplay').textContent = `${user.full_name} (${user.role.toUpperCase()})`;
+      document.getElementById('userDot').className = user.role === 'admin' ? "w-2 h-2 rounded-full bg-amber-400" : "w-2 h-2 rounded-full bg-emerald-400";
+
+      const authBtn = document.getElementById('authActionBtn');
+      authBtn.textContent = "Sign Out";
+      authBtn.className = "text-xs bg-rose-600 hover:bg-rose-700 font-semibold px-3 py-1.5 rounded-lg text-white cursor-pointer";
+      authBtn.onclick = logoutUser;
+
+      updateUploadUI();
+      loadReports();
+      if (currentUser.role === 'admin') switchView('admin');
     }
 
-    // Community Upvoting Function
-    async function upvoteTicket(reportId) {
-      try {
-        const res = await fetch(`/api/v1/report/${reportId}/upvote`, { method: 'POST' });
-        const json = await res.json();
-        if (json.success) {
-          loadReports();
-        }
-      } catch (err) {
-        console.error(err);
-      }
+    function logoutUser() {
+      currentUser = null;
+      localStorage.removeItem('cw_user');
+
+      document.getElementById('userNameDisplay').textContent = "Guest Citizen";
+      document.getElementById('userDot').className = "w-2 h-2 rounded-full bg-slate-400";
+
+      const authBtn = document.getElementById('authActionBtn');
+      authBtn.textContent = "Sign In / Register";
+      authBtn.className = "theme-accent-btn text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer";
+      authBtn.onclick = () => openAuthModal('login');
+
+      updateUploadUI();
+      loadReports();
+      switchView('report');
     }
 
-    // Resolution Modal Handlers
-    function promptResolution(reportId) {
-      document.getElementById('resolveReportId').value = reportId;
-      document.getElementById('resolveTicketLabel').textContent = `Attaching completion proof for #${reportId}`;
-      document.getElementById('resolveModal').classList.remove('hidden');
-      document.getElementById('resolveModalCard').classList.add('modal-enter');
-    }
-
-    function closeResolveModal() {
-      document.getElementById('resolveModal').classList.add('hidden');
-      document.getElementById('resolveForm').reset();
-    }
-
-    async function submitResolution(e) {
-      e.preventDefault();
-      const reportId = document.getElementById('resolveReportId').value;
-      const file = document.getElementById('resolveImageInput').files[0];
-      const btn = document.getElementById('resolveSubmitBtn');
-
-      btn.disabled = true;
-      btn.textContent = "Uploading Verification...";
-
-      const formData = new FormData();
-      formData.append("after_image", file);
-
-      try {
-        const res = await fetch(`/api/v1/report/${reportId}/resolve?role=${currentUser.role}`, {
-          method: 'POST',
-          body: formData
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.detail || "Failed to resolve ticket.");
-        closeResolveModal();
-        loadAdminReports();
-        loadAdminStats();
-        loadReports();
-      } catch (err) {
-        alert(err.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Verify & Mark Ticket Resolved";
-      }
-    }
-
-    // Load Reports, Fit Camera, & Render "Before & After" Popups
-    async function loadReports() {
-      try {
-        const res = await fetch('/api/v1/reports');
-        const json = await res.json();
-        activeReports = json.data;
-
-        document.getElementById('mapReportCountBadge').textContent = `${json.count} Reports`;
-
-        markersLayer.clearLayers();
-
-        activeReports.forEach(r => {
-          let markerColor = "#10b981"; // Emerald
-          if (r.status !== "Resolved") {
-            if (r.severity === "Critical") markerColor = "#ef4444";
-            else if (r.severity === "Medium") markerColor = "#f59e0b";
-          }
-
-          const circle = L.circleMarker([r.latitude, r.longitude], {
-            radius: 8, fillColor: markerColor, color: "#ffffff", weight: 2, fillOpacity: 0.95
-          });
-
-          // Side-by-side Before & After comparison if Resolved
-          let mediaHtml = `<img src="${r.image_url}" class="w-full h-32 object-cover" />`;
-          if (r.status === "Resolved" && r.resolved_image_url) {
-            mediaHtml = `
-              <div class="grid grid-cols-2 gap-0.5 bg-slate-900">
-                <div class="relative">
-                  <img src="${r.image_url}" class="w-full h-28 object-cover" />
-                  <span class="absolute bottom-1 left-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">Before</span>
-                </div>
-                <div class="relative">
-                  <img src="${r.resolved_image_url}" class="w-full h-28 object-cover" />
-                  <span class="absolute bottom-1 left-1 bg-emerald-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">Fixed ✓</span>
-                </div>
-              </div>
-            `;
-          }
-
-          // Community Upvote Button vs Resolved Badge
-          let actionHtml = '';
-          if (r.status !== "Resolved") {
-            actionHtml = `
-              <button onclick="upvoteTicket('${r.report_id}')" class="w-full mt-2.5 bg-amber-50 hover:bg-amber-100 active:scale-[0.98] text-amber-900 border border-amber-200 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition cursor-pointer">
-                <span>👍 I see this too!</span>
-                <span class="bg-amber-200 text-amber-900 font-bold px-1.5 py-0.2 rounded-full text-[10px]">+${r.upvote_count || 0}</span>
-              </button>
-            `;
-          } else {
-            actionHtml = `
-              <div class="mt-2 p-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-[11px] font-semibold text-center flex items-center justify-center space-x-1">
-                <span>✓</span><span>Contractor Repaired & Verified</span>
-              </div>
-            `;
-          }
-
-          circle.bindPopup(`
-            <div class="w-64 font-sans text-xs">
-              ${mediaHtml}
-              <div class="p-3 bg-white">
-                <div class="flex justify-between items-center mb-1">
-                  <span class="font-bold text-slate-900">${r.report_id}</span>
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-                    r.status === 'Resolved' ? 'bg-emerald-100 text-emerald-800' : (r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800')
-                  }">${r.status === 'Resolved' ? 'Resolved' : r.severity}</span>
-                </div>
-                <p class="font-semibold text-slate-800">${r.hazard_type}</p>
-                <p class="text-slate-500 text-[11px] mt-1">${r.notes}</p>
-                ${actionHtml}
-                <div class="mt-2 pt-2 border-t border-slate-100 flex justify-between text-[10px] text-slate-400">
-                  <span>Status: <b>${r.status}</b></span>
-                  <span>Endorsements: <b>${(r.upvote_count || 0) + (r.duplicate_count || 1) - 1}</b></span>
-                </div>
-              </div>
-            </div>
-          `);
-
-          markersLayer.addLayer(circle);
-        });
-
-        // Auto-frame map boundaries around reported incidents
-        if (activeReports.length > 0) {
-          const validCoords = activeReports.map(r => [r.latitude, r.longitude]);
-          map.fitBounds(L.latLngBounds(validCoords), { padding: [40, 40], maxZoom: 14 });
-        }
-
-      } catch (e) { console.error(e); }
-    }
-
-    // Submit Report
-    document.getElementById('incidentForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const submitBtn = document.getElementById('submitBtn');
-      const banner = document.getElementById('feedbackBanner');
-      submitBtn.disabled = true;
-      submitBtn.textContent = "AI Scanning Defect...";
-
-      const formData = new FormData();
-      formData.append("latitude", document.getElementById('latInput').value);
-      formData.append("longitude", document.getElementById('lngInput').value);
-      formData.append("category", document.getElementById('categoryInput').value);
-      formData.append("notes", document.getElementById('notesInput').value);
-      formData.append("reported_by", currentUser ? currentUser.email : "anonymous@citizen.my");
-      formData.append("image", fileInput.files[0]);
-
-      try {
-        const response = await fetch('/api/v1/report', { method: 'POST', body: formData });
-        const res = await response.json();
-        banner.className = "mt-4 p-3 rounded-xl text-xs font-medium border bg-emerald-50 text-emerald-800 border-emerald-200 block view-transition shadow-sm";
-        banner.innerHTML = `
-          <b>Success!</b> Ticket: <b>${res.ticket.report_id}</b><br>
-          AI Assessment: <b>${res.ticket.hazard_type}</b> (${res.ticket.severity} Priority)<br>
-          ${res.is_duplicate ? '📍 Merged into duplicate ticket within 10m.' : '✓ Saved to SQL Database & Plotted on Map.'}
-        `;
-        document.getElementById('incidentForm').reset();
-        previewContainer.classList.add('hidden');
-        dropPrompt.classList.remove('hidden');
-        imagePreview.src = "";
-        loadReports();
-      } catch (err) {
-        banner.className = "mt-4 p-3 rounded-xl text-xs font-medium border bg-rose-50 text-rose-700 border-rose-200 block view-transition shadow-sm";
-        banner.textContent = "Error: " + err.message;
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Submit for AI Verification";
-      }
-    });
-
-    // History and Tracking
+    // 7. My Reports & Track Ticket
     async function loadMyReports() {
-      const email = currentUser ? currentUser.email : "anonymous@citizen.my";
-      document.getElementById('myReportsSubtitle').textContent = `Showing incident history for ${email}`;
+      if (!isUserSignedIn()) {
+        document.getElementById('myReportsList').innerHTML = `<p class="theme-text-muted text-xs text-center py-6">Please sign in to view your submissions.</p>`;
+        return;
+      }
+      const email = currentUser.email;
       const res = await fetch(`/api/v1/reports?user_email=${encodeURIComponent(email)}`);
       const json = await res.json();
       document.getElementById('myReportCountBadge').textContent = `${json.count} Reports`;
@@ -984,22 +1009,17 @@
       list.innerHTML = "";
 
       if (json.data.length === 0) {
-        list.innerHTML = `<p class="theme-text-muted text-xs text-center py-6">No reports registered under ${email} yet.</p>`;
+        list.innerHTML = `<p class="theme-text-muted text-xs text-center py-6">No reports submitted yet.</p>`;
         return;
       }
 
       json.data.forEach(r => {
         list.innerHTML += `
-          <div class="theme-card flex items-center justify-between p-3.5 border rounded-xl transition-all duration-200 hover:shadow-xs">
+          <div class="theme-card flex items-center justify-between p-3.5 border rounded-xl">
             <div class="flex items-center space-x-3">
-              <img src="${r.image_url}" class="w-12 h-12 object-cover rounded-lg border shadow-inner" />
+              <img src="${r.image_url}" class="w-12 h-12 object-cover rounded-lg border" />
               <div>
-                <div class="flex items-center space-x-2">
-                  <span class="font-bold text-xs font-mono">${r.report_id}</span>
-                  <span class="px-2 py-0.2 rounded text-[10px] font-bold ${
-                    r.status === 'Resolved' ? 'bg-emerald-100 text-emerald-800' : (r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800')
-                  }">${r.status === 'Resolved' ? 'Resolved' : r.severity}</span>
-                </div>
+                <span class="font-bold text-xs font-mono">${r.report_id}</span>
                 <p class="text-xs font-medium">${r.hazard_type}</p>
                 <p class="theme-text-muted text-[11px]">${r.submitted_at}</p>
               </div>
@@ -1020,50 +1040,38 @@
 
       try {
         const res = await fetch(`/api/v1/report/${code}`);
-        if (!res.ok) throw new Error("Ticket not found in database.");
+        if (!res.ok) throw new Error("Ticket not found.");
         const t = await res.json();
         const steps = ['Submitted', 'AI Verified', 'Dispatched', 'Resolved'];
         const currentIdx = steps.indexOf(t.status) !== -1 ? steps.indexOf(t.status) : 1;
 
-        let trackingMedia = `<img src="${t.image_url}" class="w-14 h-14 rounded-lg object-cover border shadow-inner" />`;
-        if (t.status === "Resolved" && t.resolved_image_url) {
-          trackingMedia = `
-            <div class="flex space-x-1">
-              <img src="${t.image_url}" title="Before" class="w-12 h-12 rounded-lg object-cover border" />
-              <img src="${t.resolved_image_url}" title="After" class="w-12 h-12 rounded-lg object-cover border border-emerald-500" />
-            </div>
-          `;
-        }
-
         container.classList.remove('hidden');
-        container.className = "space-y-4 pt-4 border-t view-transition";
         container.innerHTML = `
-          <div class="theme-card flex justify-between items-start p-3.5 rounded-xl border shadow-xs transition-all duration-200">
+          <div class="theme-card flex justify-between items-start p-3.5 rounded-xl border">
             <div>
               <span class="theme-text-muted text-[11px] font-mono">TICKET #${t.report_id}</span>
               <h3 class="text-sm font-bold">${t.hazard_type}</h3>
               <p class="theme-text-muted text-xs">${t.notes}</p>
               <p class="text-[11px] text-amber-600 font-semibold mt-1">👍 Endorsed by ${t.upvote_count || 0} residents</p>
             </div>
-            ${trackingMedia}
+            <img src="${t.image_url}" class="w-14 h-14 rounded-lg object-cover border" />
           </div>
           <div class="grid grid-cols-4 gap-2 pt-2">
             ${steps.map((s, idx) => `
-              <div class="text-center group">
-                <div class="w-7 h-7 mx-auto rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${                   idx <= currentIdx ? 'theme-accent-btn shadow-xs scale-105' : 'bg-slate-200 text-slate-600'                 }">${idx <= currentIdx ? '✓' : idx + 1}</div>
-                <p class="text-[10px] font-semibold mt-1 transition-colors duration-200 ${idx <= currentIdx ? 'font-bold' : 'theme-text-muted'}">${s}</p>
+              <div class="text-center">
+                <div class="w-7 h-7 mx-auto rounded-full flex items-center justify-center text-xs font-bold ${                   idx <= currentIdx ? 'theme-accent-btn' : 'bg-slate-200 text-slate-600'                 }">${idx <= currentIdx ? '✓' : idx + 1}</div>
+                <p class="text-[10px] font-semibold mt-1">${s}</p>
               </div>
             `).join('')}
           </div>
         `;
       } catch (err) {
         container.classList.remove('hidden');
-        container.className = "space-y-4 pt-4 border-t view-transition";
         container.innerHTML = `<p class="text-rose-600 text-xs text-center font-semibold">${err.message}</p>`;
       }
     }
 
-    // Admin Command Portal
+    // 8. Admin Operations
     async function loadAdminStats() {
       const res = await fetch('/api/v1/stats');
       const s = await res.json();
@@ -1081,30 +1089,23 @@
 
       json.data.forEach(r => {
         const tr = document.createElement('tr');
-        tr.className = "hover:opacity-80 transition-colors duration-150";
+        tr.className = "hover:bg-slate-50";
         tr.innerHTML = `
           <td class="py-3 px-4 font-mono font-bold">${r.report_id}</td>
           <td class="theme-text-muted py-3 px-4 font-mono text-[11px]">${r.reported_by}</td>
-          <td class="py-3 px-4 font-medium">${r.hazard_type}</td>
+          <td class="py-3 px-4">${r.hazard_type}</td>
           <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-            r.status === 'Resolved' ? 'bg-emerald-100 text-emerald-800' : (r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800')
-          }">${r.status === 'Resolved' ? 'Resolved' : r.severity}</span></td>
+            r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+          }">${r.severity}</span></td>
           <td class="py-3 px-4 font-semibold text-amber-600">👍 ${r.upvote_count || 0}</td>
           <td class="py-3 px-4 font-semibold">${r.status}</td>
           <td class="py-3 px-4 text-right">
-            ${r.status === 'Resolved' ? 
-              `<span class="text-emerald-600 font-bold text-xs">✓ Verified</span>` :
-              `<div class="flex items-center justify-end space-x-1.5">
-                <select onchange="updateTicketStatus('${r.report_id}', this.value)" class="theme-input text-xs border rounded p-1 cursor-pointer">
-                  <option value="" disabled selected>Dispatch...</option>
-                  <option value="AI Verified">AI Verified</option>
-                  <option value="Dispatched">Dispatched</option>
-                </select>
-                <button onclick="promptResolution('${r.report_id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] px-2.5 py-1 rounded font-semibold transition active:scale-95 cursor-pointer shadow-xs">
-                  Resolve Proof
-                </button>
-              </div>`
-            }
+            <select onchange="updateTicketStatus('${r.report_id}', this.value)" class="theme-input text-xs border rounded p-1 cursor-pointer">
+              <option value="" disabled selected>Update...</option>
+              <option value="AI Verified">AI Verified</option>
+              <option value="Dispatched">Dispatched</option>
+              <option value="Resolved">Resolved</option>
+            </select>
           </td>
         `;
         tbody.appendChild(tr);
@@ -1121,20 +1122,22 @@
       loadReports();
     }
 
+    // 9. Startup Lifecycle
     window.onload = () => {
       initTheme();
+      initMap();
+      loadReports();
 
       const savedUser = localStorage.getItem('cw_user');
       if (savedUser) {
         try {
           setUserSession(JSON.parse(savedUser));
         } catch (e) {
-          localStorage.removeItem('cw_user');
+          logoutUser();
         }
+      } else {
+        updateUploadUI();
       }
-
-      initMap();
-      loadReports();
     };
   </script>
 </body>
