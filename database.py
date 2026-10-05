@@ -79,7 +79,7 @@ def init_db():
 
     # Pre-seed default test accounts
     seed_users = [
-        ("citizen@citywatch.my", "user123", "Muhammad Affandi (Citizen)", "citizen"),
+        ("citizen@citywatch.my", "user123", "You", "citizen"),
         ("admin@dbkl.gov.my", "admin123", "En. Razak (DBKL Operations)", "admin")
     ]
     for email, pwd, name, role in seed_users:
