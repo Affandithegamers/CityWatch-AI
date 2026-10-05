@@ -46,7 +46,7 @@
         <button id="nav-track" onclick="switchView('track')" class="px-3.5 py-1.5 rounded-lg text-slate-300 hover:text-white transition active:scale-95">
           Track Ticket
         </button>
-        <button id="nav-admin" onclick="switchView('admin')" class="px-3.5 py-1.5 rounded-lg text-amber-400 hover:text-amber-300 transition active:scale-95">
+        <button id="nav-admin" onclick="switchView('admin')" class="hidden px-3.5 py-1.5 rounded-lg text-amber-400 hover:text-amber-300 transition active:scale-95">
           Council Ops
         </button>
       </nav>
@@ -682,11 +682,11 @@
       }
 
       try {
-        const res = await fetch(`/api/v1/report/${reportId}/upvote?user_email=${encodeURIComponent(currentUser.email)}`, {
+        const res = await fetch(`/api/v1/report/${encodeURIComponent(reportId)}/upvote?user_email=${encodeURIComponent(currentUser.email)}`, {
           method: 'POST'
         });
         const data = await res.json();
-        if (data.success) {
+        if (res.ok && data.success) {
           await loadReports();
         } else {
           alert(data.detail || "Unable to register upvote.");
@@ -701,9 +701,9 @@
         const emailParam = currentUser ? `?user_email=${encodeURIComponent(currentUser.email)}` : "";
         const res = await fetch(`/api/v1/reports${emailParam}`);
         const json = await res.json();
-        activeReports = json.data;
+        activeReports = json.data || [];
 
-        document.getElementById('mapReportCountBadge').textContent = `${json.count} Reports`;
+        document.getElementById('mapReportCountBadge').textContent = `${json.count || activeReports.length} Reports`;
         
         if (isHeatmapActive) return;
 
@@ -745,6 +745,17 @@
             `;
           }
 
+          let adminDeleteHtml = '';
+          if (currentUser && currentUser.role === 'admin') {
+            adminDeleteHtml = `
+              <div class="mt-2 pt-2 border-t border-slate-100 text-right">
+                <button onclick="confirmDeleteReport('${r.report_id}')" class="px-2 py-1 text-[10px] bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded font-semibold transition cursor-pointer">
+                  🗑️ Delete Ticket (Admin)
+                </button>
+              </div>
+            `;
+          }
+
           circle.bindPopup(`
             <div class="w-64 font-sans text-xs">
               <img src="${r.image_url}" class="w-full h-32 object-cover" />
@@ -762,6 +773,7 @@
                   <span>Status: <b>${r.status}</b></span>
                   <span>Endorsements: <b>${r.upvote_count || 0}</b></span>
                 </div>
+                ${adminDeleteHtml}
               </div>
             </div>
           `);
@@ -784,6 +796,13 @@
         return;
       }
 
+      const lat = document.getElementById('latInput').value;
+      const lng = document.getElementById('lngInput').value;
+      if (!lat || !lng) {
+        alert("Please click on the map or calibrate GPS to select hazard coordinates.");
+        return;
+      }
+
       if (!fileInput.files || fileInput.files.length === 0) {
         alert("Please select or drop an incident photo first.");
         return;
@@ -795,8 +814,8 @@
       submitBtn.textContent = "AI Scanning Hazard...";
 
       const formData = new FormData();
-      formData.append("latitude", document.getElementById('latInput').value);
-      formData.append("longitude", document.getElementById('lngInput').value);
+      formData.append("latitude", lat);
+      formData.append("longitude", lng);
       formData.append("category", document.getElementById('categoryInput').value);
       formData.append("notes", document.getElementById('notesInput').value);
       formData.append("reported_by", currentUser.email);
@@ -963,6 +982,9 @@
       document.getElementById('userNameDisplay').textContent = `${user.full_name} (${user.role.toUpperCase()})`;
       document.getElementById('userDot').className = user.role === 'admin' ? "w-2 h-2 rounded-full bg-amber-400" : "w-2 h-2 rounded-full bg-emerald-400";
 
+      const navAdmin = document.getElementById('nav-admin');
+      if (navAdmin) navAdmin.classList.toggle('hidden', user.role !== 'admin');
+
       const authBtn = document.getElementById('authActionBtn');
       authBtn.textContent = "Sign Out";
       authBtn.className = "text-xs bg-rose-600 hover:bg-rose-700 font-semibold px-3 py-1.5 rounded-lg text-white cursor-pointer";
@@ -979,6 +1001,9 @@
 
       document.getElementById('userNameDisplay').textContent = "Guest Citizen";
       document.getElementById('userDot').className = "w-2 h-2 rounded-full bg-slate-400";
+
+      const navAdmin = document.getElementById('nav-admin');
+      if (navAdmin) navAdmin.classList.add('hidden');
 
       const authBtn = document.getElementById('authActionBtn');
       authBtn.textContent = "Sign In / Register";
@@ -999,16 +1024,17 @@
       const email = currentUser.email;
       const res = await fetch(`/api/v1/reports?user_email=${encodeURIComponent(email)}`);
       const json = await res.json();
-      document.getElementById('myReportCountBadge').textContent = `${json.count} Reports`;
+      document.getElementById('myReportCountBadge').textContent = `${json.count || 0} Reports`;
       const list = document.getElementById('myReportsList');
       list.innerHTML = "";
 
-      if (json.data.length === 0) {
+      const reports = json.data || [];
+      if (reports.length === 0) {
         list.innerHTML = `<p class="theme-text-muted text-xs text-center py-6">No reports submitted yet.</p>`;
         return;
       }
 
-      json.data.forEach(r => {
+      reports.forEach(r => {
         list.innerHTML += `
           <div class="theme-card flex items-center justify-between p-3.5 border rounded-xl">
             <div class="flex items-center space-x-3">
@@ -1034,7 +1060,7 @@
       if (!code) return;
 
       try {
-        const res = await fetch(`/api/v1/report/${code}`);
+        const res = await fetch(`/api/v1/report/${encodeURIComponent(code)}`);
         if (!res.ok) throw new Error("Ticket not found.");
         const t = await res.json();
         const steps = ['Submitted', 'AI Verified', 'Dispatched', 'Resolved'];
@@ -1054,7 +1080,7 @@
           <div class="grid grid-cols-4 gap-2 pt-2">
             ${steps.map((s, idx) => `
               <div class="text-center">
-                <div class="w-7 h-7 mx-auto rounded-full flex items-center justify-center text-xs font-bold ${                   idx <= currentIdx ? 'theme-accent-btn' : 'bg-slate-200 text-slate-600'                 }">${idx <= currentIdx ? '✓' : idx + 1}</div>
+                <div class="w-7 h-7 mx-auto rounded-full flex items-center justify-center text-xs font-bold ${idx <= currentIdx ? 'theme-accent-btn' : 'bg-slate-200 text-slate-600'}">${idx <= currentIdx ? '✓' : idx + 1}</div>
                 <p class="text-[10px] font-semibold mt-1">${s}</p>
               </div>
             `).join('')}
@@ -1068,61 +1094,101 @@
 
     // 9. Admin Operations
     async function loadAdminStats() {
-      const res = await fetch('/api/v1/stats');
-      const s = await res.json();
-      document.getElementById('kpiTotal').textContent = s.total_reports;
-      document.getElementById('kpiCritical').textContent = s.critical_count;
-      document.getElementById('kpiDuplicates').textContent = s.duplicates_prevented;
-      document.getElementById('kpiResolved').textContent = s.resolved_count;
+      try {
+        const res = await fetch('/api/v1/stats');
+        const s = await res.json();
+        document.getElementById('kpiTotal').textContent = s.total_reports || 0;
+        document.getElementById('kpiCritical').textContent = s.critical_count || 0;
+        document.getElementById('kpiDuplicates').textContent = s.duplicates_prevented || 0;
+        document.getElementById('kpiResolved').textContent = s.resolved_count || 0;
+      } catch (err) {
+        console.error("Failed to load admin stats", err);
+      }
     }
 
     async function loadAdminReports() {
-      const res = await fetch('/api/v1/reports');
-      const json = await res.json();
-      const tbody = document.getElementById('adminTableBody');
-      tbody.innerHTML = "";
+      try {
+        const res = await fetch('/api/v1/reports');
+        const json = await res.json();
+        const tbody = document.getElementById('adminTableBody');
+        tbody.innerHTML = "";
 
-      json.data.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50";
-        tr.innerHTML = `
-          <td class="py-3 px-4 font-mono font-bold">${r.report_id}</td>
-          <td class="theme-text-muted py-3 px-4 font-mono text-[11px]">${r.reported_by}</td>
-          <td class="py-3 px-4">${r.hazard_type}</td>
-          <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-            r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
-          }">${r.severity}</span></td>
-          <td class="py-3 px-4 font-semibold text-amber-600">👍 ${r.upvote_count || 0}</td>
-          <td class="py-3 px-4 font-semibold">${r.status}</td>
-          <td class="py-3 px-4 text-right">
-            <select onchange="updateTicketStatus('${r.report_id}', this.value)" class="theme-input text-xs border rounded p-1 cursor-pointer">
-              <option value="" disabled selected>Update...</option>
-              <option value="AI Verified">AI Verified</option>
-              <option value="Dispatched">Dispatched</option>
-              <option value="Resolved">Resolved</option>
-            </select>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
+        const reports = json.data || [];
+        reports.forEach(r => {
+          const tr = document.createElement('tr');
+          tr.className = "hover:bg-slate-50";
+          tr.innerHTML = `
+            <td class="py-3 px-4 font-mono font-bold">${r.report_id}</td>
+            <td class="theme-text-muted py-3 px-4 font-mono text-[11px]">${r.reported_by}</td>
+            <td class="py-3 px-4">${r.hazard_type}</td>
+            <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+              r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+            }">${r.severity}</span></td>
+            <td class="py-3 px-4 font-semibold text-amber-600">👍 ${r.upvote_count || 0}</td>
+            <td class="py-3 px-4 font-semibold">${r.status}</td>
+            <td class="py-3 px-4 text-right space-x-2">
+              <select onchange="updateTicketStatus('${r.report_id}', this.value)" class="theme-input text-xs border rounded p-1 cursor-pointer">
+                <option value="" disabled selected>Update...</option>
+                <option value="AI Verified">AI Verified</option>
+                <option value="Dispatched">Dispatched</option>
+                <option value="Resolved">Resolved</option>
+              </select>
+              <button onclick="confirmDeleteReport('${r.report_id}')" class="px-2 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded font-semibold transition cursor-pointer" title="Delete Invalid / Prank Report">
+                🗑️️ Delete
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("Failed to load admin reports", err);
+      }
     }
 
     async function updateTicketStatus(reportId, newStatus) {
       if (!newStatus || !currentUser) return;
-      await fetch(`/api/v1/report/${reportId}/status?new_status=${encodeURIComponent(newStatus)}&role=${currentUser.role}`, {
-        method: 'PATCH'
-      });
-      loadAdminReports();
-      loadAdminStats();
-      loadReports();
+      try {
+        await fetch(`/api/v1/report/${encodeURIComponent(reportId)}/status?new_status=${encodeURIComponent(newStatus)}&role=${currentUser.role}`, {
+          method: 'PATCH'
+        });
+        await loadAdminReports();
+        await loadAdminStats();
+        await loadReports();
+      } catch (err) {
+        alert("Failed to update status: " + err.message);
+      }
+    }
+
+    async function confirmDeleteReport(reportId) {
+      if (!confirm(`Are you sure you want to permanently delete ticket ${reportId}? This action cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/v1/report/${encodeURIComponent(reportId)}?role=admin`, {
+          method: 'DELETE'
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          alert("Error: " + (data.detail || "Could not delete report"));
+          return;
+        }
+
+        alert(`Ticket ${reportId} has been deleted.`);
+        
+        await loadAdminReports();
+        await loadAdminStats();
+        await loadReports();
+      } catch (err) {
+        alert("Network error: " + err.message);
+      }
     }
 
     // 10. Startup Lifecycle
     window.onload = () => {
       initTheme();
       initMap();
-      loadReports();
-
 
       const savedUser = localStorage.getItem('cw_user');
       if (savedUser) {
@@ -1133,6 +1199,7 @@
         }
       } else {
         updateUploadUI();
+        loadReports();
       }
     };
   </script>

@@ -14,7 +14,8 @@ from database import (
     init_db, register_user, authenticate_user, insert_report,
     get_all_reports, get_report_by_id, update_report_status,
     mark_report_resolved_with_image, toggle_upvote_status,
-    add_endorsement_on_duplicate, get_user_upvoted_ids, get_database_stats
+    add_endorsement_on_duplicate, get_user_upvoted_ids, get_database_stats,
+    delete_report
 )
 from ai_detector import optimize_and_save_image, run_yolo_multi_hazard_triage
 
@@ -147,6 +148,18 @@ def patch_status(report_id: str, new_status: str, role: Optional[str] = Query("a
     if not success:
         raise HTTPException(status_code=404, detail="Report ID not found.")
     return {"success": True, "report_id": report_id, "updated_status": new_status}
+
+@app.delete("/api/v1/report/{report_id}")
+def remove_report(report_id: str, role: Optional[str] = Query("admin")):
+    if role != "admin":
+        raise HTTPException(
+            status_code=403, 
+            detail="Unauthorized: Only Municipal Authority accounts can delete reports."
+        )
+    success = delete_report(report_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Report ID not found.")
+    return {"success": True, "message": f"Report {report_id} permanently deleted."}
 
 @app.post("/api/v1/report")
 async def create_report(

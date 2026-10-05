@@ -425,3 +425,22 @@ def get_database_stats() -> Dict[str, Any]:
         "resolved_count": resolved,
         "duplicates_prevented": max(0, duplicates - total) if duplicates > total else 0
     }
+
+def delete_report(report_id: str) -> bool:
+    """Permanently deletes a report and its associated upvotes from the database."""
+    conn = get_connection()
+    cur = conn.cursor()
+    clean_id = report_id.strip()
+
+    if DATABASE_URL:
+        cur.execute("DELETE FROM upvotes WHERE UPPER(report_id) = UPPER(%s);", (clean_id,))
+        cur.execute("DELETE FROM reports WHERE UPPER(report_id) = UPPER(%s);", (clean_id,))
+    else:
+        cur.execute("DELETE FROM upvotes WHERE UPPER(report_id) = UPPER(?);", (clean_id,))
+        cur.execute("DELETE FROM reports WHERE UPPER(report_id) = UPPER(?);", (clean_id,))
+
+    deleted = cur.rowcount > 0
+    conn.commit()
+    cur.close()
+    conn.close()
+    return deleted
