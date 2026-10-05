@@ -1,6 +1,7 @@
 import os
 import math
 import uuid
+import hashlib
 from datetime import datetime
 from typing import Optional
 
@@ -13,15 +14,11 @@ from database import (
     init_db, register_user, authenticate_user, insert_report,
     get_all_reports, get_report_by_id, update_report_status,
     mark_report_resolved_with_image, toggle_upvote_status,
-    get_user_upvoted_ids, get_database_stats
+    add_endorsement_on_duplicate, get_user_upvoted_ids, get_database_stats
 )
 from ai_detector import optimize_and_save_image, run_yolo_multi_hazard_triage
 
-app = FastAPI(
-    title="CityWatch AI",
-    description="Intelligent Municipal Hazard Reporting Platform API",
-    version="3.3.0"
-)
+app = FastAPI(title="CityWatch AI", version="3.5.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,6 +37,9 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 init_db()
 
+# Operational radius in meters (incorporates GPS horizontal drift tolerance)
+DUPLICATE_RADIUS_METERS = 20.0
+
 
 def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculates spatial great-circle distance between two GPS coordinates in meters."""
@@ -50,6 +50,13 @@ def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: fl
     a = (math.sin(delta_phi / 2.0) ** 2 +
          math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0) ** 2)
     return earth_radius_m * (2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a)))
+
+
+def compute_file_hash(upload_file: UploadFile) -> str:
+    """Computes MD5 hash of image bytes for exact duplicate photo detection."""
+    content = upload_file.file.read()
+    upload_file.file.seek(0)
+    return hashlib.md5(content).hexdigest()
 
 
 class RegisterPayload(BaseModel):
@@ -63,17 +70,6 @@ class LoginPayload(BaseModel):
     email: str
     password: str
 
-@app.post("/api/v1/report/{report_id}/upvote")
-def upvote_ticket(report_id: str, user_email: Optional[str] = Query(None)):
-    # ANTI-SPAM & ANTI-PRANK GUARD: Reject anonymous guests
-    if not user_email or user_email.strip().lower() in ["anonymous", "guest_user", "guest", "null", "undefined", ""]:
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required: Guests cannot upvote reports to prevent spam or pranks. Please sign in or register."
-        )
-
-    result = toggle_upvote_status(report_id, user_email)
-    return {"success": True, **result}
 
 @app.post("/api/v1/auth/register")
 def register(payload: RegisterPayload):
@@ -117,7 +113,12 @@ def single_report(report_id: str):
 
 
 @app.post("/api/v1/report/{report_id}/upvote")
-def upvote_ticket(report_id: str, user_email: Optional[str] = Query("anonymous")):
+def upvote_ticket(report_id: str, user_email: Optional[str] = Query(None)):
+    if not user_email or user_email.strip().lower() in ["anonymous", "guest_user", "guest", "null", "undefined", ""]:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required: Guests cannot upvote reports to prevent spam or pranks. Please sign in or register."
+        )
     result = toggle_upvote_status(report_id, user_email)
     return {"success": True, **result}
 
@@ -149,6 +150,8 @@ async def create_report(
     if not reported_by or reported_by.strip().lower() in ["anonymous@citizen.my", "guest", "null", "undefined", ""]:
         raise HTTPException(status_code=401, detail="Authentication required: Guests cannot submit hazard photographs.")
 
+    img_hash = compute_file_hash(image)
+
     file_id = uuid.uuid4().hex[:10]
     raw_path = os.path.join(UPLOAD_DIR, f"raw_{file_id}.jpg")
     annotated_path = os.path.join(UPLOAD_DIR, f"ai_{file_id}.jpg")
@@ -159,15 +162,32 @@ async def create_report(
     existing_reports = get_all_reports()
     is_duplicate = False
     target_parent_id = None
+    duplicate_reason = ""
 
     for existing in existing_reports:
-        if existing["status"] != "Resolved":
-            dist = calculate_haversine_distance(latitude, longitude, existing["latitude"], existing["longitude"])
-            if dist <= 10.0:
-                is_duplicate = True
-                target_parent_id = existing["report_id"]
-                toggle_upvote_status(target_parent_id, reported_by)
-                break
+        # Check A: Exact same photo uploaded
+        same_photo = (img_hash and existing.get("image_hash") == img_hash)
+
+        # Check B: Same road vicinity within tolerance threshold (20m)
+        dist = calculate_haversine_distance(latitude, longitude, existing["latitude"], existing["longitude"])
+        same_spot = (dist <= DUPLICATE_RADIUS_METERS)
+
+        # Check C: Category matches
+        same_category = (category.lower() in existing["hazard_type"].lower() or existing["hazard_type"].lower() in category.lower())
+
+        if same_photo:
+            is_duplicate = True
+            target_parent_id = existing["report_id"]
+            duplicate_reason = "Identical photo already on file"
+            add_endorsement_on_duplicate(target_parent_id, reported_by)
+            break
+
+        if same_spot and same_category:
+            is_duplicate = True
+            target_parent_id = existing["report_id"]
+            duplicate_reason = f"Nearby report within {round(dist, 1)}m matching hazard type"
+            add_endorsement_on_duplicate(target_parent_id, reported_by)
+            break
 
     ticket = {
         "report_id": f"REP-{uuid.uuid4().hex[:6].upper()}",
@@ -178,6 +198,7 @@ async def create_report(
         "status": "Merged (Duplicate)" if is_duplicate else "AI Verified",
         "notes": notes if notes else "No remarks provided.",
         "image_url": f"/uploads/ai_{file_id}.jpg",
+        "image_hash": img_hash,
         "resolved_image_url": None,
         "reported_by": reported_by.strip().lower(),
         "is_duplicate": is_duplicate,
@@ -193,7 +214,8 @@ async def create_report(
     return {
         "success": True,
         "is_duplicate": is_duplicate,
-        "message": f"Merged into ticket {target_parent_id}" if is_duplicate else "Registered and AI verified.",
+        "target_parent_id": target_parent_id,
+        "message": f"Merged into master ticket {target_parent_id} ({duplicate_reason})" if is_duplicate else "Registered and AI verified.",
         "ticket": ticket
     }
 

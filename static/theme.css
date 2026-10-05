@@ -55,6 +55,11 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* GUARANTEED VIEW HIDING */
+.hidden {
+  display: none !important;
+}
+
 .theme-card { background-color: var(--bg-card) !important; border-color: var(--border-card) !important; }
 .theme-input { background-color: var(--input-bg) !important; border-color: var(--input-border) !important; color: var(--text-main) !important; }
 .theme-header { background-color: var(--header-bg) !important; border-color: var(--header-border) !important; }
@@ -71,7 +76,7 @@ body {
 
 /* Micro-interaction Keyframes */
 @keyframes viewFadeSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.view-transition { animation: viewFadeSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.view-transition { animation: viewFadeSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 @keyframes modalPopIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 .modal-enter { animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
