@@ -18,7 +18,7 @@ from database import (
 )
 from ai_detector import optimize_and_save_image, run_yolo_multi_hazard_triage
 
-app = FastAPI(title="CityWatch AI", version="3.5.0")
+app = FastAPI(title="CityWatch AI", version="3.6.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,9 +35,10 @@ os.makedirs(STATIC_DIR, exist_ok=True)
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
+# Initialize database schema on boot
 init_db()
 
-# Operational radius in meters (incorporates GPS horizontal drift tolerance)
+# GPS drift tolerance threshold in meters
 DUPLICATE_RADIUS_METERS = 20.0
 
 
@@ -77,7 +78,7 @@ def register(payload: RegisterPayload):
         user = register_user(payload.email, payload.password, payload.full_name, payload.role)
         return {"success": True, "user": user}
     except Exception as e:
-        if "UNIQUE constraint failed" in str(e):
+        if "UNIQUE constraint failed" in str(e) or "duplicate key" in str(e):
             raise HTTPException(status_code=400, detail="An account with this email already exists.")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -138,6 +139,102 @@ def resolve_ticket(report_id: str, role: str = Query(...), after_image: UploadFi
     return {"success": True, "report_id": report_id}
 
 
+@app.patch("/api/v1/report/{report_id}/status")
+def patch_status(report_id: str, new_status: str, role: Optional[str] = Query("admin")):
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Unauthorized: Only Municipal Authority accounts can modify tickets.")
+    success = update_report_status(report_id, new_status)
+    if not success:
+        raise HTTPException(status_code=404, detail="Report ID not found.")
+    return {"success": True, "report_id": report_id, "updated_status": new_status}
+
+@app.post("/api/v1/report")
+async def create_report(
+    latitude: float = Form(...),
+    longitude: float = Form(...),
+    category: str = Form(...),
+    notes: Optional[str] = Form(None),
+    reported_by: Optional[str] = Form(None),
+    image: UploadFile = File(...)
+):
+    try:
+        if not reported_by or reported_by.strip().lower() in ["anonymous@citizen.my", "guest", "null", "undefined", ""]:
+            raise HTTPException(status_code=401, detail="Authentication required: Guests cannot submit hazard photographs.")
+
+        img_hash = compute_file_hash(image)
+
+        file_id = uuid.uuid4().hex[:10]
+        raw_path = os.path.join(UPLOAD_DIR, f"raw_{file_id}.jpg")
+        annotated_path = os.path.join(UPLOAD_DIR, f"ai_{file_id}.jpg")
+
+        optimize_and_save_image(image, raw_path)
+        ai_triage = run_yolo_multi_hazard_triage(raw_path, annotated_path, category)
+
+        existing_reports = get_all_reports()
+        is_duplicate = False
+        target_parent_id = None
+        duplicate_reason = ""
+
+        for existing in existing_reports:
+            same_photo = bool(img_hash and existing.get("image_hash") == img_hash)
+            dist = calculate_haversine_distance(latitude, longitude, existing["latitude"], existing["longitude"])
+            same_spot = (dist <= DUPLICATE_RADIUS_METERS)
+
+            existing_hazard = existing.get("hazard_type", "").lower()
+            new_category = category.lower()
+            same_category = (new_category in existing_hazard or existing_hazard in new_category)
+            is_active = existing.get("status") not in ["Resolved", "Closed"]
+
+            if same_photo:
+                is_duplicate = True
+                target_parent_id = existing.get("parent_report_id") or existing["report_id"]
+                duplicate_reason = "Identical photo already on file"
+                add_endorsement_on_duplicate(target_parent_id, reported_by)
+                break
+
+            if same_spot and same_category and is_active:
+                is_duplicate = True
+                target_parent_id = existing.get("parent_report_id") or existing["report_id"]
+                duplicate_reason = f"Nearby report within {round(dist, 1)}m matching hazard type"
+                add_endorsement_on_duplicate(target_parent_id, reported_by)
+                break
+
+        ticket = {
+            "report_id": f"REP-{uuid.uuid4().hex[:6].upper()}",
+            "latitude": latitude,
+            "longitude": longitude,
+            "hazard_type": ai_triage["hazard_type"],
+            "severity": ai_triage["severity"],
+            "status": "Merged (Duplicate)" if is_duplicate else ai_triage["status"],
+            "notes": notes if notes else "No remarks provided.",
+            "image_url": f"/uploads/ai_{file_id}.jpg",
+            "image_hash": img_hash,
+            "resolved_image_url": None,
+            "reported_by": reported_by.strip().lower(),
+            "is_duplicate": is_duplicate,
+            "parent_report_id": target_parent_id,
+            "duplicate_count": 1 if not is_duplicate else 0,
+            "upvote_count": 0,
+            "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+        if not is_duplicate:
+            insert_report(ticket)
+
+        return {
+            "success": True,
+            "is_duplicate": is_duplicate,
+            "target_parent_id": target_parent_id,
+            "message": f"Merged into master ticket {target_parent_id} ({duplicate_reason})" if is_duplicate else "Registered and AI verified.",
+            "ticket": ticket
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
 @app.post("/api/v1/report")
 async def create_report(
     latitude: float = Form(...),
@@ -165,26 +262,25 @@ async def create_report(
     duplicate_reason = ""
 
     for existing in existing_reports:
-        # Check A: Exact same photo uploaded
-        same_photo = (img_hash and existing.get("image_hash") == img_hash)
-
-        # Check B: Same road vicinity within tolerance threshold (20m)
+        same_photo = bool(img_hash and existing.get("image_hash") == img_hash)
         dist = calculate_haversine_distance(latitude, longitude, existing["latitude"], existing["longitude"])
         same_spot = (dist <= DUPLICATE_RADIUS_METERS)
 
-        # Check C: Category matches
-        same_category = (category.lower() in existing["hazard_type"].lower() or existing["hazard_type"].lower() in category.lower())
+        existing_hazard = existing.get("hazard_type", "").lower()
+        new_category = category.lower()
+        same_category = (new_category in existing_hazard or existing_hazard in new_category)
+        is_active = existing.get("status") not in ["Resolved", "Closed"]
 
         if same_photo:
             is_duplicate = True
-            target_parent_id = existing["report_id"]
+            target_parent_id = existing.get("parent_report_id") or existing["report_id"]
             duplicate_reason = "Identical photo already on file"
             add_endorsement_on_duplicate(target_parent_id, reported_by)
             break
 
-        if same_spot and same_category:
+        if same_spot and same_category and is_active:
             is_duplicate = True
-            target_parent_id = existing["report_id"]
+            target_parent_id = existing.get("parent_report_id") or existing["report_id"]
             duplicate_reason = f"Nearby report within {round(dist, 1)}m matching hazard type"
             add_endorsement_on_duplicate(target_parent_id, reported_by)
             break
@@ -195,7 +291,7 @@ async def create_report(
         "longitude": longitude,
         "hazard_type": ai_triage["hazard_type"],
         "severity": ai_triage["severity"],
-        "status": "Merged (Duplicate)" if is_duplicate else "AI Verified",
+        "status": "Merged (Duplicate)" if is_duplicate else ai_triage["status"],
         "notes": notes if notes else "No remarks provided.",
         "image_url": f"/uploads/ai_{file_id}.jpg",
         "image_hash": img_hash,
@@ -220,16 +316,7 @@ async def create_report(
     }
 
 
-@app.patch("/api/v1/report/{report_id}/status")
-def patch_status(report_id: str, new_status: str, role: Optional[str] = Query("admin")):
-    if role != "admin":
-        raise HTTPException(status_code=403, detail="Unauthorized: Only Municipal Authority accounts can modify tickets.")
-    success = update_report_status(report_id, new_status)
-    if not success:
-        raise HTTPException(status_code=404, detail="Report ID not found.")
-    return {"success": True, "report_id": report_id, "updated_status": new_status}
-
-
+# Mount the frontend SPA directory
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 
 if __name__ == "__main__":

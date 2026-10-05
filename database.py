@@ -1,266 +1,427 @@
+import os
 import sqlite3
 import hashlib
-from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 
-DB_PATH = "citywatch.db"
-
-
-def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+DATABASE_URL = os.getenv("DATABASE_URL")
+LOCAL_DB_PATH = "citywatch.db"
 
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 
+def get_connection():
+    if DATABASE_URL:
+        import psycopg2
+        from psycopg2.extras import RealDictCursor
+        return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    else:
+        conn = sqlite3.connect(LOCAL_DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
+
 def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    conn = get_connection()
+    cur = conn.cursor()
 
-    # 1. Users Table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            full_name TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'citizen',
-            created_at TEXT NOT NULL
-        )
-    """)
+    if DATABASE_URL:
+        # Supabase PostgreSQL
+        cur.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                full_name TEXT NOT NULL,
+                role TEXT DEFAULT 'citizen',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS reports (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                report_id TEXT UNIQUE NOT NULL,
+                latitude DOUBLE PRECISION NOT NULL,
+                longitude DOUBLE PRECISION NOT NULL,
+                geom GEOMETRY(Point, 4326),
+                hazard_type TEXT NOT NULL,
+                severity TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'AI Verified',
+                notes TEXT,
+                image_url TEXT,
+                image_hash TEXT,
+                resolved_image_url TEXT,
+                reported_by TEXT NOT NULL,
+                is_duplicate BOOLEAN DEFAULT FALSE,
+                parent_report_id TEXT,
+                duplicate_count INTEGER DEFAULT 1,
+                upvote_count INTEGER DEFAULT 0,
+                submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS upvotes (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                report_id TEXT NOT NULL,
+                user_email TEXT NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                UNIQUE(report_id, user_email)
+            );
+        """)
+        # Safe column migrations for PostgreSQL
+        cur.execute("ALTER TABLE reports ADD COLUMN IF NOT EXISTS image_hash TEXT;")
+        cur.execute("ALTER TABLE reports ADD COLUMN IF NOT EXISTS duplicate_count INTEGER DEFAULT 1;")
+        cur.execute("ALTER TABLE reports ADD COLUMN IF NOT EXISTS upvote_count INTEGER DEFAULT 0;")
+        cur.execute("ALTER TABLE reports ADD COLUMN IF NOT EXISTS parent_report_id TEXT;")
+        cur.execute("ALTER TABLE reports ADD COLUMN IF NOT EXISTS is_duplicate BOOLEAN DEFAULT FALSE;")
+    else:
+        # Local SQLite
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                full_name TEXT NOT NULL,
+                role TEXT DEFAULT 'citizen',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                report_id TEXT UNIQUE NOT NULL,
+                latitude REAL NOT NULL,
+                longitude REAL NOT NULL,
+                hazard_type TEXT NOT NULL,
+                severity TEXT NOT NULL,
+                status TEXT NOT NULL,
+                notes TEXT,
+                image_url TEXT,
+                image_hash TEXT,
+                resolved_image_url TEXT,
+                reported_by TEXT NOT NULL,
+                is_duplicate INTEGER DEFAULT 0,
+                parent_report_id TEXT,
+                duplicate_count INTEGER DEFAULT 1,
+                upvote_count INTEGER DEFAULT 0,
+                submitted_at TEXT NOT NULL
+            );
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS upvotes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                report_id TEXT NOT NULL,
+                user_email TEXT NOT NULL,
+                UNIQUE(report_id, user_email)
+            );
+        """)
 
-    # 2. Reports Table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS reports (
-            report_id TEXT PRIMARY KEY,
-            latitude REAL NOT NULL,
-            longitude REAL NOT NULL,
-            hazard_type TEXT NOT NULL,
-            severity TEXT NOT NULL,
-            status TEXT NOT NULL,
-            notes TEXT,
-            image_url TEXT NOT NULL,
-            image_hash TEXT,
-            resolved_image_url TEXT,
-            reported_by TEXT NOT NULL,
-            is_duplicate INTEGER DEFAULT 0,
-            parent_report_id TEXT,
-            duplicate_count INTEGER DEFAULT 1,
-            upvote_count INTEGER DEFAULT 0,
-            submitted_at TEXT NOT NULL,
-            FOREIGN KEY (reported_by) REFERENCES users (email)
-        )
-    """)
-
-    # 3. Upvotes Tracking Table (1 vote per user & enables undo/toggle)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS report_upvotes (
-            report_id TEXT NOT NULL,
-            user_email TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            PRIMARY KEY (report_id, user_email)
-        )
-    """)
-
-    # Migrations for existing database files
-    cursor.execute("PRAGMA table_info(reports)")
-    columns = [col["name"] for col in cursor.fetchall()]
-    if "image_hash" not in columns:
-        cursor.execute("ALTER TABLE reports ADD COLUMN image_hash TEXT")
-    if "upvote_count" not in columns:
-        cursor.execute("ALTER TABLE reports ADD COLUMN upvote_count INTEGER DEFAULT 0")
-    if "resolved_image_url" not in columns:
-        cursor.execute("ALTER TABLE reports ADD COLUMN resolved_image_url TEXT")
+        # Safe column migrations for SQLite (adds missing columns if database already existed)
+        for col_def in [
+            "image_hash TEXT",
+            "duplicate_count INTEGER DEFAULT 1",
+            "upvote_count INTEGER DEFAULT 0",
+            "parent_report_id TEXT",
+            "is_duplicate INTEGER DEFAULT 0"
+        ]:
+            try:
+                cur.execute(f"ALTER TABLE reports ADD COLUMN {col_def};")
+            except sqlite3.OperationalError:
+                pass  # Column already exists
 
     conn.commit()
-
-    # Pre-seed default test accounts
-    seed_users = [
-        ("citizen@citywatch.my", "user123", "You", "citizen"),
-        ("admin@dbkl.gov.my", "admin123", "En. Razak (DBKL Operations)", "admin")
-    ]
-    for email, pwd, name, role in seed_users:
-        cursor.execute("SELECT email FROM users WHERE email = ?", (email,))
-        if not cursor.fetchone():
-            cursor.execute(
-                "INSERT INTO users (email, password_hash, full_name, role, created_at) VALUES (?, ?, ?, ?, ?)",
-                (email, hash_password(pwd), name, role, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-            )
-
-    conn.commit()
+    cur.close()
     conn.close()
 
-
-def register_user(email: str, password: str, full_name: str, role: str = "citizen") -> Dict:
-    conn = get_db_connection()
-    cursor = conn.cursor()
+def register_user(email: str, password: str, full_name: str, role: str = "citizen") -> Dict[str, Any]:
+    conn = get_connection()
+    cur = conn.cursor()
     clean_email = email.strip().lower()
     pw_hash = hash_password(password)
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    cursor.execute(
-        "INSERT INTO users (email, password_hash, full_name, role, created_at) VALUES (?, ?, ?, ?, ?)",
-        (clean_email, pw_hash, full_name.strip(), role.strip().lower(), now_str)
-    )
+    if DATABASE_URL:
+        cur.execute(
+            "INSERT INTO users (email, password_hash, full_name, role) VALUES (%s, %s, %s, %s);",
+            (clean_email, pw_hash, full_name.strip(), role)
+        )
+    else:
+        cur.execute(
+            "INSERT INTO users (email, password_hash, full_name, role) VALUES (?, ?, ?, ?);",
+            (clean_email, pw_hash, full_name.strip(), role)
+        )
     conn.commit()
+    cur.close()
     conn.close()
     return {"email": clean_email, "full_name": full_name, "role": role}
 
 
-def authenticate_user(email: str, password: str) -> Optional[Dict]:
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT email, full_name, role FROM users WHERE email = ? AND password_hash = ?",
-        (email.strip().lower(), hash_password(password))
-    )
-    row = cursor.fetchone()
-    conn.close()
-    if row:
-        return {"email": row["email"], "full_name": row["full_name"], "role": row["role"]}
-    return None
+def authenticate_user(email: str, password: str) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    cur = conn.cursor()
+    clean_email = email.strip().lower()
+    pw_hash = hash_password(password)
 
-
-def insert_report(report: Dict):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO reports (
-            report_id, latitude, longitude, hazard_type, severity,
-            status, notes, image_url, image_hash, resolved_image_url, reported_by,
-            is_duplicate, parent_report_id, duplicate_count, upvote_count, submitted_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        report["report_id"], report["latitude"], report["longitude"],
-        report["hazard_type"], report["severity"], report["status"],
-        report["notes"], report["image_url"], report.get("image_hash"),
-        report.get("resolved_image_url"), report["reported_by"],
-        1 if report["is_duplicate"] else 0, report["parent_report_id"],
-        report["duplicate_count"], report.get("upvote_count", 0), report["submitted_at"]
-    ))
-    conn.commit()
-    conn.close()
-
-
-def get_all_reports(user_email: Optional[str] = None) -> List[Dict]:
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    if user_email:
-        cursor.execute("SELECT * FROM reports WHERE reported_by = ? ORDER BY submitted_at DESC", (user_email.strip().lower(),))
+    if DATABASE_URL:
+        cur.execute(
+            "SELECT email, full_name, role FROM users WHERE email = %s AND password_hash = %s;",
+            (clean_email, pw_hash)
+        )
     else:
-        cursor.execute("SELECT * FROM reports WHERE is_duplicate = 0 ORDER BY submitted_at DESC")
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
-
-
-def get_report_by_id(report_id: str) -> Optional[Dict]:
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM reports WHERE report_id = ?", (report_id.strip().upper(),))
-    row = cursor.fetchone()
+        cur.execute(
+            "SELECT email, full_name, role FROM users WHERE email = ? AND password_hash = ?;",
+            (clean_email, pw_hash)
+        )
+    row = cur.fetchone()
+    cur.close()
     conn.close()
     return dict(row) if row else None
 
 
-def add_endorsement_on_duplicate(parent_report_id: str, citizen_email: str):
-    """When a duplicate is reported, add an endorsement without toggling it off."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    clean_id = parent_report_id.strip().upper()
-    clean_email = citizen_email.strip().lower()
+def insert_report(ticket: Dict[str, Any]):
+    conn = get_connection()
+    cur = conn.cursor()
 
-    cursor.execute("SELECT 1 FROM report_upvotes WHERE report_id = ? AND user_email = ?", (clean_id, clean_email))
-    if not cursor.fetchone():
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        cursor.execute("INSERT INTO report_upvotes (report_id, user_email, created_at) VALUES (?, ?, ?)", (clean_id, clean_email, now_str))
-        cursor.execute("UPDATE reports SET upvote_count = upvote_count + 1 WHERE report_id = ?", (clean_id,))
-
-    cursor.execute("UPDATE reports SET duplicate_count = duplicate_count + 1 WHERE report_id = ?", (clean_id,))
-    conn.commit()
-    conn.close()
-
-
-def toggle_upvote_status(report_id: str, user_email: str) -> Dict:
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    clean_id = report_id.strip().upper()
-    clean_email = user_email.strip().lower()
-
-    cursor.execute("SELECT 1 FROM report_upvotes WHERE report_id = ? AND user_email = ?", (clean_id, clean_email))
-    already_voted = cursor.fetchone() is not None
-
-    if already_voted:
-        cursor.execute("DELETE FROM report_upvotes WHERE report_id = ? AND user_email = ?", (clean_id, clean_email))
-        cursor.execute("UPDATE reports SET upvote_count = MAX(0, upvote_count - 1) WHERE report_id = ?", (clean_id,))
-        has_upvoted = False
+    if DATABASE_URL:
+        cur.execute("""
+            INSERT INTO reports (
+                report_id, latitude, longitude, geom, hazard_type, severity,
+                status, notes, image_url, image_hash, resolved_image_url,
+                reported_by, is_duplicate, parent_report_id, duplicate_count,
+                upvote_count, submitted_at
+            ) VALUES (
+                %s, %s, %s, ST_SetSRID(ST_Point(%s, %s), 4326), %s, %s,
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW()
+            );
+        """, (
+            ticket["report_id"], ticket["latitude"], ticket["longitude"],
+            ticket["longitude"], ticket["latitude"], ticket["hazard_type"],
+            ticket["severity"], ticket["status"], ticket.get("notes", ""),
+            ticket.get("image_url", ""), ticket.get("image_hash", ""),
+            ticket.get("resolved_image_url"), ticket["reported_by"],
+            ticket.get("is_duplicate", False), ticket.get("parent_report_id"),
+            ticket.get("duplicate_count", 1), ticket.get("upvote_count", 0)
+        ))
     else:
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        cursor.execute("INSERT INTO report_upvotes (report_id, user_email, created_at) VALUES (?, ?, ?)", (clean_id, clean_email, now_str))
-        cursor.execute("UPDATE reports SET upvote_count = upvote_count + 1 WHERE report_id = ?", (clean_id,))
-        has_upvoted = True
-
+        cur.execute("""
+            INSERT INTO reports (
+                report_id, latitude, longitude, hazard_type, severity,
+                status, notes, image_url, image_hash, resolved_image_url,
+                reported_by, is_duplicate, parent_report_id, duplicate_count,
+                upvote_count, submitted_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """, (
+            ticket["report_id"], ticket["latitude"], ticket["longitude"],
+            ticket["hazard_type"], ticket["severity"], ticket["status"],
+            ticket.get("notes", ""), ticket.get("image_url", ""),
+            ticket.get("image_hash", ""), ticket.get("resolved_image_url"),
+            ticket["reported_by"], 1 if ticket.get("is_duplicate") else 0,
+            ticket.get("parent_report_id"), ticket.get("duplicate_count", 1),
+            ticket.get("upvote_count", 0), ticket["submitted_at"]
+        ))
     conn.commit()
-    cursor.execute("SELECT upvote_count FROM reports WHERE report_id = ?", (clean_id,))
-    count = cursor.fetchone()["upvote_count"]
+    cur.close()
     conn.close()
-    return {"report_id": clean_id, "has_upvoted": has_upvoted, "upvote_count": count}
 
 
-def get_user_upvoted_ids(user_email: str) -> List[str]:
-    if not user_email:
-        return []
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT report_id FROM report_upvotes WHERE user_email = ?", (user_email.strip().lower(),))
-    rows = cursor.fetchall()
+def get_all_reports(user_email: Optional[str] = None) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    cur = conn.cursor()
+
+    if DATABASE_URL:
+        if user_email:
+            cur.execute("SELECT * FROM reports WHERE reported_by = %s ORDER BY submitted_at DESC;", (user_email.strip().lower(),))
+        else:
+            cur.execute("SELECT * FROM reports ORDER BY submitted_at DESC;")
+    else:
+        if user_email:
+            cur.execute("SELECT * FROM reports WHERE reported_by = ? ORDER BY id DESC;", (user_email.strip().lower(),))
+        else:
+            cur.execute("SELECT * FROM reports ORDER BY id DESC;")
+
+    rows = cur.fetchall()
+    results = []
+    for r in rows:
+        d = dict(r)
+        d["is_duplicate"] = bool(d.get("is_duplicate"))
+        results.append(d)
+    cur.close()
     conn.close()
-    return [r["report_id"] for r in rows]
+    return results
+
+
+def get_report_by_id(report_id: str) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    cur = conn.cursor()
+
+    if DATABASE_URL:
+        cur.execute("SELECT * FROM reports WHERE UPPER(report_id) = UPPER(%s);", (report_id.strip(),))
+    else:
+        cur.execute("SELECT * FROM reports WHERE UPPER(report_id) = UPPER(?);", (report_id.strip(),))
+
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    if row:
+        d = dict(row)
+        d["is_duplicate"] = bool(d.get("is_duplicate"))
+        return d
+    return None
 
 
 def update_report_status(report_id: str, new_status: str) -> bool:
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE reports SET status = ? WHERE report_id = ?", (new_status, report_id))
-    affected = cursor.rowcount
+    conn = get_connection()
+    cur = conn.cursor()
+
+    if DATABASE_URL:
+        cur.execute("UPDATE reports SET status = %s WHERE UPPER(report_id) = UPPER(%s);", (new_status, report_id.strip()))
+    else:
+        cur.execute("UPDATE reports SET status = ? WHERE UPPER(report_id) = UPPER(?);", (new_status, report_id.strip()))
+
+    updated = cur.rowcount > 0
     conn.commit()
+    cur.close()
     conn.close()
-    return affected > 0
+    return updated
 
 
 def mark_report_resolved_with_image(report_id: str, resolved_image_url: str) -> bool:
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE reports SET status = 'Resolved', resolved_image_url = ? WHERE report_id = ?", (resolved_image_url, report_id))
-    affected = cursor.rowcount
+    conn = get_connection()
+    cur = conn.cursor()
+
+    if DATABASE_URL:
+        cur.execute(
+            "UPDATE reports SET status = 'Resolved', resolved_image_url = %s WHERE UPPER(report_id) = UPPER(%s);",
+            (resolved_image_url, report_id.strip())
+        )
+    else:
+        cur.execute(
+            "UPDATE reports SET status = 'Resolved', resolved_image_url = ? WHERE UPPER(report_id) = UPPER(?);",
+            (resolved_image_url, report_id.strip())
+        )
+
+    updated = cur.rowcount > 0
     conn.commit()
+    cur.close()
     conn.close()
-    return affected > 0
+    return updated
 
 
-def get_database_stats() -> Dict:
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) AS total FROM reports WHERE is_duplicate = 0")
-    total = cursor.fetchone()["total"]
+def add_endorsement_on_duplicate(report_id: str, user_email: Optional[str]):
+    conn = get_connection()
+    cur = conn.cursor()
 
-    cursor.execute("SELECT COUNT(*) AS critical FROM reports WHERE severity = 'Critical' AND is_duplicate = 0")
-    critical = cursor.fetchone()["critical"]
+    if DATABASE_URL:
+        cur.execute("UPDATE reports SET duplicate_count = duplicate_count + 1 WHERE UPPER(report_id) = UPPER(%s);", (report_id.strip(),))
+        if user_email and user_email.strip().lower() not in ["anonymous", "guest", "null", "undefined"]:
+            cur.execute("""
+                INSERT INTO upvotes (report_id, user_email) 
+                VALUES (%s, %s) 
+                ON CONFLICT (report_id, user_email) DO NOTHING;
+            """, (report_id.strip(), user_email.strip().lower()))
+            cur.execute("SELECT COUNT(*) as count FROM upvotes WHERE UPPER(report_id) = UPPER(%s);", (report_id.strip(),))
+            new_count = cur.fetchone()["count"]
+            cur.execute("UPDATE reports SET upvote_count = %s WHERE UPPER(report_id) = UPPER(%s);", (new_count, report_id.strip()))
+    else:
+        cur.execute("UPDATE reports SET duplicate_count = duplicate_count + 1 WHERE UPPER(report_id) = UPPER(?);", (report_id.strip(),))
+        if user_email and user_email.strip().lower() not in ["anonymous", "guest", "null", "undefined"]:
+            cur.execute("INSERT OR IGNORE INTO upvotes (report_id, user_email) VALUES (?, ?);", (report_id.strip(), user_email.strip().lower()))
+            cur.execute("SELECT COUNT(*) FROM upvotes WHERE UPPER(report_id) = UPPER(?);", (report_id.strip(),))
+            new_count = cur.fetchone()[0]
+            cur.execute("UPDATE reports SET upvote_count = ? WHERE UPPER(report_id) = UPPER(?);", (new_count, report_id.strip()))
 
-    cursor.execute("SELECT COUNT(*) AS resolved FROM reports WHERE status = 'Resolved' AND is_duplicate = 0")
-    resolved = cursor.fetchone()["resolved"]
+    conn.commit()
+    cur.close()
+    conn.close()
 
-    cursor.execute("SELECT SUM(duplicate_count - 1) AS merged FROM reports WHERE is_duplicate = 0")
-    merged_row = cursor.fetchone()["merged"]
-    merged = merged_row if merged_row else 0
 
+def toggle_upvote_status(report_id: str, user_email: str) -> Dict[str, Any]:
+    conn = get_connection()
+    cur = conn.cursor()
+    norm_email = user_email.strip().lower()
+
+    if DATABASE_URL:
+        cur.execute("SELECT id FROM upvotes WHERE UPPER(report_id) = UPPER(%s) AND user_email = %s;", (report_id.strip(), norm_email))
+        existing = cur.fetchone()
+        if existing:
+            cur.execute("DELETE FROM upvotes WHERE UPPER(report_id) = UPPER(%s) AND user_email = %s;", (report_id.strip(), norm_email))
+            has_upvoted = False
+        else:
+            cur.execute("INSERT INTO upvotes (report_id, user_email) VALUES (%s, %s);", (report_id.strip(), norm_email))
+            has_upvoted = True
+
+        cur.execute("SELECT COUNT(*) as count FROM upvotes WHERE UPPER(report_id) = UPPER(%s);", (report_id.strip(),))
+        new_count = cur.fetchone()["count"]
+        cur.execute("UPDATE reports SET upvote_count = %s WHERE UPPER(report_id) = UPPER(%s);", (new_count, report_id.strip()))
+    else:
+        cur.execute("SELECT id FROM upvotes WHERE UPPER(report_id) = UPPER(?) AND user_email = ?;", (report_id.strip(), norm_email))
+        existing = cur.fetchone()
+        if existing:
+            cur.execute("DELETE FROM upvotes WHERE UPPER(report_id) = UPPER(?) AND user_email = ?;", (report_id.strip(), norm_email))
+            has_upvoted = False
+        else:
+            cur.execute("INSERT INTO upvotes (report_id, user_email) VALUES (?, ?);", (report_id.strip(), norm_email))
+            has_upvoted = True
+
+        cur.execute("SELECT COUNT(*) FROM upvotes WHERE UPPER(report_id) = UPPER(?);", (report_id.strip(),))
+        new_count = cur.fetchone()[0]
+        cur.execute("UPDATE reports SET upvote_count = ? WHERE UPPER(report_id) = UPPER(?);", (new_count, report_id.strip()))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"report_id": report_id, "upvotes": new_count, "has_upvoted": has_upvoted}
+
+
+def get_user_upvoted_ids(user_email: Optional[str]) -> List[str]:
+    if not user_email:
+        return []
+    conn = get_connection()
+    cur = conn.cursor()
+    norm_email = user_email.strip().lower()
+
+    if DATABASE_URL:
+        cur.execute("SELECT report_id FROM upvotes WHERE user_email = %s;", (norm_email,))
+        rows = cur.fetchall()
+        result = [r["report_id"] for r in rows]
+    else:
+        cur.execute("SELECT report_id FROM upvotes WHERE user_email = ?;", (norm_email,))
+        rows = cur.fetchall()
+        result = [r["report_id"] for r in rows]
+
+    cur.close()
+    conn.close()
+    return result
+
+
+def get_database_stats() -> Dict[str, Any]:
+    conn = get_connection()
+    cur = conn.cursor()
+
+    if DATABASE_URL:
+        cur.execute("SELECT COUNT(*) as count FROM reports;")
+        total = cur.fetchone()["count"]
+        cur.execute("SELECT COUNT(*) as count FROM reports WHERE severity = 'Critical';")
+        critical = cur.fetchone()["count"]
+        cur.execute("SELECT COUNT(*) as count FROM reports WHERE status = 'Resolved';")
+        resolved = cur.fetchone()["count"]
+        cur.execute("SELECT COALESCE(SUM(duplicate_count), 0) as count FROM reports;")
+        duplicates = cur.fetchone()["count"]
+    else:
+        cur.execute("SELECT COUNT(*) FROM reports;")
+        total = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM reports WHERE severity = 'Critical';")
+        critical = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM reports WHERE status = 'Resolved';")
+        resolved = cur.fetchone()[0]
+        cur.execute("SELECT COALESCE(SUM(duplicate_count), 0) FROM reports;")
+        duplicates = cur.fetchone()[0]
+
+    cur.close()
     conn.close()
     return {
         "total_reports": total,
         "critical_count": critical,
         "resolved_count": resolved,
-        "duplicates_prevented": merged
+        "duplicates_prevented": max(0, duplicates - total) if duplicates > total else 0
     }
