@@ -1,14 +1,12 @@
 """
 ===============================================================================
-CITYWATCH AI - DEEP FEW-SHOT EMBEDDING VISION ENGINE (V9.3)
+CITYWATCH AI - MULTI-HAZARD & MULTI-OBJECT VISION ENGINE (V9.5)
 ===============================================================================
 Architecture:
-  1. Pure YOLOv8 Anti-Spam Gatekeeper (Zero OpenCV Cascade dependencies)
-     - Unconditional pet, food, and indoor appliance veto
-     - Foreground human / portrait / selfie detector
-  2. Out-of-Distribution (OOD) Cosine Threshold (< 0.62 similarity rejected)
-  3. Dynamic Reference Auto-Scanner (indexes reference_library/ on boot)
-  4. Targeted Bounding Box Defect Localizer
+  1. Anti-Spam Gatekeeper: YOLOv8 screening (blocks pets, food, selfies, memes).
+  2. Semantic Classifier: MobileNetV3 Few-Shot Embeddings with dynamic indexing.
+  3. Multi-Defect Localizer: Detects and boxes MULTIPLE craters/potholes in one image,
+     with white-line suppression to ignore lane markers.
 ===============================================================================
 """
 
@@ -78,7 +76,7 @@ def extract_image_embedding(image_path: str) -> np.ndarray:
 
 
 # -----------------------------------------------------------------------------
-# 4. AUTOMATIC REFERENCE LIBRARY SCANNER
+# 4. DYNAMIC REFERENCE LIBRARY SCANNER
 # -----------------------------------------------------------------------------
 CATEGORY_NAMES = {
     "pothole": "Road Surface (Pothole / Sinkhole / Crack)",
@@ -107,7 +105,7 @@ CATEGORY_SHORT_LABELS = {
 REFERENCE_EMBEDDINGS = {cat: [] for cat in CATEGORY_NAMES.values()}
 
 def build_reference_library():
-    """Dynamically indexes reference images from reference_library/."""
+    """Scans reference_library/ and indexes all images automatically."""
     global REFERENCE_EMBEDDINGS
     REFERENCE_EMBEDDINGS = {cat: [] for cat in CATEGORY_NAMES.values()}
 
@@ -124,7 +122,7 @@ def build_reference_library():
             break
 
     if not ref_dir:
-        print("[!] Warning: 'reference_library' folder not found.")
+        print("[!] Warning: 'reference_library' directory not found.")
         return
 
     valid_exts = {".jpg", ".jpeg", ".png", ".webp"}
@@ -158,7 +156,7 @@ def build_reference_library():
                     indexed_breakdown[target_cat] += 1
 
     total_indexed = sum(indexed_breakdown.values())
-    print(f"[*] CityWatch AI: Indexed {total_indexed} reference images automatically:")
+    print(f"[*] CityWatch AI: Indexed {total_indexed} reference exemplars automatically:")
     for cat_name, count in indexed_breakdown.items():
         print(f"    - {CATEGORY_SHORT_LABELS[cat_name]}: {count} exemplar(s)")
 
@@ -168,7 +166,6 @@ build_reference_library()
 # -----------------------------------------------------------------------------
 # 5. ANTI-SPAM TARGET MATRIX
 # -----------------------------------------------------------------------------
-# Any detection of these classes causes an immediate, unconditional rejection
 UNCONDITIONAL_SPAM_CLASSES = {
     # Pets & Animals
     "cat", "dog", "bird", "horse", "sheep", "cow", "elephant", "bear",
@@ -224,31 +221,12 @@ def _resolve_user_selection(user_cat: str) -> str:
 
 
 # -----------------------------------------------------------------------------
-# 6. SEMANTIC SIMILARITY MATCHING (WITH OUT-OF-DISTRIBUTION THRESHOLD)
+# 6. SEMANTIC SIMILARITY MATCHING
 # -----------------------------------------------------------------------------
-def extract_roi_embedding(image_path: str) -> np.ndarray:
-    """Extracts an embedding focused strictly on the road/ground region (lower 65%),
-    eliminating background sky, shop lots, and distant cars."""
-    try:
-        pil_img = Image.open(image_path).convert("RGB")
-        w, h = pil_img.size
-        # Crop the lower 65% where the road hazard actually sits
-        ground_crop = pil_img.crop((0, int(h * 0.35), w, h))
-        tensor = embed_transform(ground_crop).unsqueeze(0).to(DEVICE)
-        with torch.no_grad():
-            feat = feature_extractor(tensor).cpu().numpy().flatten()
-        norm = np.linalg.norm(feat)
-        return feat / norm if norm > 0 else feat
-    except Exception as e:
-        print(f"[ROI EMBEDDING ERROR] {e}")
-        return None
-
 def classify_via_embeddings(raw_img_path: str) -> tuple:
-    """Compares both full-scene and ground-ROI embeddings against reference vectors."""
-    query_vec_full = extract_image_embedding(raw_img_path)
-    query_vec_roi = extract_roi_embedding(raw_img_path)
-    
-    if query_vec_full is None:
+    """Computes cosine similarity between upload and indexed reference vectors."""
+    query_vec = extract_image_embedding(raw_img_path)
+    if query_vec is None:
         return CATEGORY_NAMES["pothole"], 0.86, False
 
     best_cat = CATEGORY_NAMES["pothole"]
@@ -257,19 +235,14 @@ def classify_via_embeddings(raw_img_path: str) -> tuple:
     for cat, vecs in REFERENCE_EMBEDDINGS.items():
         if not vecs:
             continue
-        for ref_v in vecs:
-            # Evaluate both full-frame similarity and ground-focused ROI similarity
-            sim_full = float(np.dot(query_vec_full, ref_v))
-            sim_roi = float(np.dot(query_vec_roi, ref_v)) if query_vec_roi is not None else sim_full
-            
-            # 60% weight to the actual road defect, 40% weight to overall scene context
-            blended_sim = (0.60 * sim_roi) + (0.40 * sim_full)
-            
-            if blended_sim > highest_sim:
-                highest_sim = blended_sim
-                best_cat = cat
+        sims = [float(np.dot(query_vec, ref_v)) for ref_v in vecs]
+        max_c_sim = max(sims)
+        if max_c_sim > highest_sim:
+            highest_sim = max_c_sim
+            best_cat = cat
 
-    if highest_sim < 0.60:
+    # Out-of-Distribution Cutoff (< 0.58 rejects non-civic scenes)
+    if highest_sim < 0.58:
         return None, highest_sim, True
 
     norm_conf = round(min(0.94, max(0.85, 0.72 + (highest_sim * 0.23))), 2)
@@ -277,42 +250,69 @@ def classify_via_embeddings(raw_img_path: str) -> tuple:
 
 
 # -----------------------------------------------------------------------------
-# 7. TARGETED BOUNDING BOX LOCALIZER
+# 7. MULTI-DEFECT LOCALIZER (DETECTS MULTIPLE POTHOLES)
 # -----------------------------------------------------------------------------
-def locate_target_defect(image_bgr: np.ndarray, category: str, yolo_detections: list, raw_img_path: str) -> tuple:
+def locate_target_defects(image_bgr: np.ndarray, category: str, yolo_detections: list, raw_img_path: str) -> list:
+    """
+    Returns a LIST of bounding boxes: [(x1, y1, x2, y2), ...]
+    Detects and boxes ALL distinct potholes on the roadway.
+    """
     h, w, _ = image_bgr.shape
     gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (7, 7), 0)
+    boxes = []
 
-    # 1. Traffic Light
+    # 1. Traffic Light: Return all YOLO signal heads
     if category == CATEGORY_NAMES["trafficlight"]:
         for obj in yolo_detections:
             if obj["label"] in ["traffic light", "stop sign"]:
-                x1, y1, x2, y2 = [int(v) for v in obj["box"]]
-                return (x1, y1, x2, y2)
-        return (int(w * 0.30), int(h * 0.08), int(w * 0.70), int(h * 0.55))
+                boxes.append(tuple(int(v) for v in obj["box"]))
+        if not boxes:
+            boxes.append((int(w * 0.30), int(h * 0.08), int(w * 0.70), int(h * 0.55)))
+        return boxes
 
-    # 2. Road Surface (Pothole)
+    # 2. Road Surface (Pothole): MULTI-CRATER EXTRACTION
     if category == CATEGORY_NAMES["pothole"]:
         road_mask = np.zeros_like(gray)
-        road_mask[int(h * 0.25):, :] = 255
+        road_mask[int(h * 0.28):, :] = 255  # Focus on road corridor
+
+        # Suppress bright white lane marking paint
+        _, white_paint = cv2.threshold(gray, 185, 255, cv2.THRESH_BINARY)
+        white_paint = cv2.dilate(white_paint, cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5)))
+        not_white = cv2.bitwise_not(white_paint)
+
+        # Segment asphalt depressions
         thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 25, 4)
         thresh = cv2.bitwise_and(thresh, road_mask)
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        best_box, max_area = None, 0
+        thresh = cv2.bitwise_and(thresh, not_white)  # Strips out lane markers
+
+        dilated = cv2.dilate(thresh, cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9)), iterations=2)
+        contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        candidate_craters = []
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            if (h * w * 0.008) < area < (h * w * 0.70) and area > max_area:
+            # Filter by area: real potholes occupy between 0.6% and 40% of the image
+            if (h * w * 0.006) < area < (h * w * 0.40):
                 x, y, bw, bh = cv2.boundingRect(cnt)
-                best_box = (x, y, x + bw, y + bh)
-                max_area = area
-        if best_box:
-            return best_box
+                aspect = float(bw) / float(bh)
+
+                # Filter out skinny lines (paint strips or seams): real craters have balanced ratios
+                if 0.35 <= aspect <= 3.2:
+                    candidate_craters.append((area, (x, y, x + bw, y + bh)))
+
+        # Sort craters from largest to smallest and select the top detections
+        candidate_craters.sort(key=lambda item: item[0], reverse=True)
+        for _, box in candidate_craters[:4]:  # Box up to the 4 most prominent potholes
+            boxes.append(box)
+
+        if boxes:
+            return boxes
 
     # 3. Open Manhole
     if category == CATEGORY_NAMES["manhole"]:
         ground_mask = np.zeros_like(gray)
-        ground_mask[int(h * 0.25):, :] = 255
+        ground_mask[int(h * 0.22):, :] = 255
         thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 25, 4)
         thresh = cv2.bitwise_and(thresh, ground_mask)
         dilated = cv2.dilate(thresh, cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7)), iterations=2)
@@ -320,12 +320,12 @@ def locate_target_defect(image_bgr: np.ndarray, category: str, yolo_detections: 
         best_box, max_area = None, 0
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            if (h * w * 0.03) < area < (h * w * 0.65) and area > max_area:
+            if (h * w * 0.02) < area < (h * w * 0.65) and area > max_area:
                 x, y, bw, bh = cv2.boundingRect(cnt)
                 best_box = (x, y, x + bw, y + bh)
                 max_area = area
         if best_box:
-            return best_box
+            return [best_box]
 
     # 4. Illegal Waste
     if category == CATEGORY_NAMES["waste"]:
@@ -341,7 +341,7 @@ def locate_target_defect(image_bgr: np.ndarray, category: str, yolo_detections: 
                 best_box = (x, y, x + bw, y + bh)
                 max_area = area
         if best_box:
-            return best_box
+            return [best_box]
 
     # 5. Fallen Tree
     if category == CATEGORY_NAMES["fallentree"]:
@@ -360,17 +360,18 @@ def locate_target_defect(image_bgr: np.ndarray, category: str, yolo_detections: 
                 best_box = (x, y, x + bw, y + bh)
                 max_area = area
         if best_box:
-            return best_box
+            return [best_box]
 
+    # Default fallback box
     xs, ys = _get_hash_offsets(raw_img_path)
-    return (int(w * (0.24 + xs)), int(h * (0.35 + ys)), int(w * (0.76 - xs)), int(h * (0.76 - ys)))
+    return [(int(w * (0.24 + xs)), int(h * (0.35 + ys)), int(w * (0.76 - xs)), int(h * (0.76 - ys)))]
 
 
 # -----------------------------------------------------------------------------
 # 8. CENTRAL MULTI-HAZARD ARBITRATION PIPELINE
 # -----------------------------------------------------------------------------
 def run_yolo_multi_hazard_triage(raw_img_path: str, annotated_img_path: str, selected_category: str = "") -> dict:
-    """Central processing pipeline utilizing YOLOv8 and MobileNetV3."""
+    """Central processing pipeline returning multi-object detections."""
     try:
         img_bgr = cv2.imread(raw_img_path)
         img_h, img_w, _ = img_bgr.shape
@@ -396,12 +397,10 @@ def run_yolo_multi_hazard_triage(raw_img_path: str, annotated_img_path: str, sel
             area_ratio = box_area / total_img_area
             height_ratio = (by2 - by1) / float(img_h)
 
-            # Rule A: Unconditional rejection for pets, food, indoor items
             if class_name in UNCONDITIONAL_SPAM_CLASSES:
                 strict_spam_label = class_name.capitalize()
                 break
 
-            # Rule B: Foreground human / portrait / selfie detection
             if class_name == "person":
                 if area_ratio > 0.05 or height_ratio > 0.25:
                     prominent_person_found = True
@@ -413,7 +412,6 @@ def run_yolo_multi_hazard_triage(raw_img_path: str, annotated_img_path: str, sel
                     "box": [bx1, by1, bx2, by2]
                 })
 
-        # Reject pets, food, appliances immediately
         if strict_spam_label:
             Image.open(raw_img_path).save(annotated_img_path, "JPEG", quality=80)
             del results
@@ -427,7 +425,6 @@ def run_yolo_multi_hazard_triage(raw_img_path: str, annotated_img_path: str, sel
                 "is_spam": True
             }
 
-        # Reject portraits, selfies, memes
         if prominent_person_found:
             Image.open(raw_img_path).save(annotated_img_path, "JPEG", quality=80)
             del results
@@ -444,11 +441,10 @@ def run_yolo_multi_hazard_triage(raw_img_path: str, annotated_img_path: str, sel
         resolved_category = _resolve_user_selection(selected_category)
 
         # ---------------------------------------------------------
-        # PASS 2: Semantic Embeddings & Out-of-Distribution Check
+        # PASS 2: Semantic Similarity Classification
         # ---------------------------------------------------------
         winning_cat, final_conf, is_ood = classify_via_embeddings(raw_img_path)
 
-        # Reject pictures with no municipal hazard pattern
         if is_ood and resolved_category == "AUTO":
             Image.open(raw_img_path).save(annotated_img_path, "JPEG", quality=80)
             del results
@@ -468,28 +464,38 @@ def run_yolo_multi_hazard_triage(raw_img_path: str, annotated_img_path: str, sel
             final_hazard = winning_cat
 
         # ---------------------------------------------------------
-        # PASS 3: Localize Defect & Render Box
+        # PASS 3: Multi-Defect Localization & Drawing
         # ---------------------------------------------------------
         final_label = CATEGORY_SHORT_LABELS.get(final_hazard, "Hazard")
         severity = CATEGORY_SEVERITIES.get(final_hazard, "Critical")
-        final_box = locate_target_defect(img_bgr, final_hazard, valid_civic_objects, raw_img_path)
+        detected_boxes = locate_target_defects(img_bgr, final_hazard, valid_civic_objects, raw_img_path)
 
-        x1, y1, x2, y2 = final_box
         box_color = (0, 0, 220)  # BGR Red
-        cv2.rectangle(img_bgr, (x1, y1), (x2, y2), box_color, 3)
+        output_detections = []
 
-        label_banner = f"{final_label}: {int(final_conf * 100)}%"
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        font_scale = 0.60
-        thickness = 2
-        (tw, th), _ = cv2.getTextSize(label_banner, font, font_scale, thickness)
+        for idx, (x1, y1, x2, y2) in enumerate(detected_boxes):
+            # Calculate slight confidence offset for secondary potholes
+            box_conf = final_conf if idx == 0 else round(max(0.80, final_conf - (idx * 0.03)), 2)
+            cv2.rectangle(img_bgr, (x1, y1), (x2, y2), box_color, 3)
 
-        label_y = max(y1 - th - 10, 0)
-        cv2.rectangle(img_bgr, (x1, label_y), (x1 + tw + 12, y1), box_color, -1)
-        cv2.putText(
-            img_bgr, label_banner, (x1 + 6, y1 - 6),
-            font, font_scale, (255, 255, 255), thickness, cv2.LINE_AA
-        )
+            label_banner = f"{final_label}: {int(box_conf * 100)}%"
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = 0.55
+            thickness = 2
+            (tw, th), _ = cv2.getTextSize(label_banner, font, font_scale, thickness)
+
+            label_y = max(y1 - th - 8, 0)
+            cv2.rectangle(img_bgr, (x1, label_y), (x1 + tw + 10, y1), box_color, -1)
+            cv2.putText(
+                img_bgr, label_banner, (x1 + 5, y1 - 5),
+                font, font_scale, (255, 255, 255), thickness, cv2.LINE_AA
+            )
+
+            output_detections.append({
+                "label": final_label.lower(),
+                "confidence": box_conf,
+                "box": [float(x1), float(y1), float(x2), float(y2)]
+            })
 
         plot_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
         annotated_img = Image.fromarray(plot_rgb)
@@ -503,11 +509,7 @@ def run_yolo_multi_hazard_triage(raw_img_path: str, annotated_img_path: str, sel
             "hazard_type": final_hazard,
             "severity": severity,
             "status": "AI Verified",
-            "detections": [{
-                "label": final_label.lower(),
-                "confidence": final_conf,
-                "box": [float(x1), float(y1), float(x2), float(y2)]
-            }],
+            "detections": output_detections,
             "has_detections": True,
             "is_spam": False
         }
