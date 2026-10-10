@@ -1,6 +1,6 @@
-/* ========================================================
+/* =========================================================================
    CITYWATCH AI: 2-THEME ENGINE (CIVIC BLUE & COFFEE)
-   ======================================================== */
+   ========================================================================= */
 
 /* 1. Civic Blue (Original Default) */
 :root, body[data-theme="blue"] {
@@ -46,20 +46,19 @@ body[data-theme="coffee"] {
   --logo-bg: #8A5A36;
 }
 
-/* ========================================================
-   BASE RULES & COMPONENT MAPPINGS
-   ======================================================== */
+/* Base Body Styles */
 body {
   background-color: var(--bg-body);
   color: var(--text-main);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* GUARANTEED VIEW HIDING */
+/* Visibility Rules */
 .hidden {
   display: none !important;
 }
 
+/* Semantic Theme Variables */
 .theme-card { background-color: var(--bg-card) !important; border-color: var(--border-card) !important; }
 .theme-input { background-color: var(--input-bg) !important; border-color: var(--input-border) !important; color: var(--text-main) !important; }
 .theme-header { background-color: var(--header-bg) !important; border-color: var(--header-border) !important; }
@@ -70,15 +69,44 @@ body {
 .theme-logo { background-color: var(--logo-bg) !important; }
 .theme-text-muted { color: var(--text-muted) !important; }
 
-/* Leaflet Map Card Styling */
-.leaflet-popup-content-wrapper { border-radius: 14px; overflow: hidden; padding: 0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25); }
-.leaflet-popup-content { margin: 0; line-height: 1.4; }
+/* Leaflet Map Popup Styling */
+.leaflet-popup-content-wrapper { 
+  border-radius: 14px; 
+  overflow: hidden; 
+  padding: 0; 
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25); 
+}
+.leaflet-popup-content { 
+  margin: 0; 
+  line-height: 1.4; 
+}
 
 /* Micro-interaction Keyframes */
-@keyframes viewFadeSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.view-transition { animation: viewFadeSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes viewFadeSlide { 
+  from { opacity: 0; transform: translateY(8px); } 
+  to { opacity: 1; transform: translateY(0); } 
+}
+.view-transition { 
+  animation: viewFadeSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+}
 
-@keyframes modalPopIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-.modal-enter { animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes modalPopIn { 
+  from { opacity: 0; transform: scale(0.96) translateY(8px); } 
+  to { opacity: 1; transform: scale(1) translateY(0); } 
+}
+.modal-enter { 
+  animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+}
 
-.drag-active { border-color: var(--accent) !important; background-color: var(--accent-soft) !important; transform: scale(1.01); }
+.drag-active { 
+  border-color: var(--accent) !important; 
+  background-color: var(--accent-soft) !important; 
+  transform: scale(1.01); 
+}
+
+/* Luminous Neon Outer Glow for Leaflet Heat Canvas */
+.leaflet-heatmap-layer {
+  filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.75)) brightness(1.25);
+  mix-blend-mode: multiply;
+  transition: opacity 0.3s ease;
+}

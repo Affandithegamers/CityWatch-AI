@@ -8,11 +8,11 @@
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Leaflet CSS & JS -->
+  <!-- Leaflet GIS Mapping Engine -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Leaflet Heatmap CDN -->
+  <!-- Leaflet Heatmap Layer CDN -->
   <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
   <!-- External 2-Theme Stylesheet -->
@@ -20,11 +20,13 @@
 </head>
 <body data-theme="blue" class="flex flex-col min-h-screen font-sans antialiased selection:bg-slate-700 selection:text-white">
 
-  <!-- HEADER -->
+  <!-- =========================================================================
+       1. GLOBAL STICKY HEADER & NAVBAR
+       ========================================================================= -->
   <header class="theme-header text-white shadow-md sticky top-0 z-50 border-b transition-colors duration-300">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
       
-      <!-- Brand Logo -->
+      <!-- Brand Logo & Tagline -->
       <div class="flex items-center space-x-3 cursor-pointer group" onclick="switchView('report')">
         <div class="theme-logo w-8 h-8 rounded-lg group-hover:rotate-3 flex items-center justify-center font-black text-white text-base shadow-sm transition-all duration-300">
           CW
@@ -35,7 +37,7 @@
         </div>
       </div>
 
-      <!-- Navigation Tabs -->
+      <!-- Navigation Tabs (SPA View Switcher) -->
       <nav class="theme-nav-pill flex items-center p-1 rounded-xl text-xs font-semibold shadow-inner border transition-colors duration-300">
         <button id="nav-report" onclick="switchView('report')" class="px-3.5 py-1.5 rounded-lg theme-accent-btn shadow-sm transition active:scale-95">
           Report Defect
@@ -51,18 +53,21 @@
         </button>
       </nav>
 
-      <!-- Profile & Settings Widgets -->
+      <!-- Profile & Settings Controls -->
       <div class="flex items-center space-x-2">
+        <!-- Appearance Settings Trigger -->
         <button onclick="openSettingsModal()" class="theme-nav-pill text-xs border hover:opacity-90 active:scale-95 px-2.5 py-1.5 rounded-lg text-slate-200 shadow-sm transition cursor-pointer flex items-center space-x-1.5" title="Appearance Settings">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           <span class="hidden sm:inline">Theme</span>
         </button>
 
+        <!-- Current User Role Badge -->
         <div id="userBadge" class="theme-nav-pill border px-3 py-1.5 rounded-lg text-xs flex items-center space-x-2">
           <span id="userDot" class="w-2 h-2 rounded-full bg-slate-400"></span>
           <span id="userNameDisplay" class="font-medium text-slate-200">Guest Citizen</span>
         </div>
 
+        <!-- Auth Action Button (Sign In / Sign Out) -->
         <button onclick="openAuthModal()" id="authActionBtn" class="theme-accent-btn text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition active:scale-95 cursor-pointer">
           Sign In / Register
         </button>
@@ -71,7 +76,11 @@
     </div>
   </header>
 
-  <!-- 2-THEME SETTINGS MODAL -->
+  <!-- =========================================================================
+       2. MODALS (THEMES, AUTH, AI INSPECTION, RESOLUTION)
+       ========================================================================= -->
+
+  <!-- THEME SETTINGS MODAL -->
   <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div id="settingsModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
       <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
@@ -79,11 +88,11 @@
           <h3 class="text-base font-bold text-slate-900">Appearance & Theme</h3>
           <p class="text-xs text-slate-500">Select your preferred operating palette.</p>
         </div>
-        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold px-2">&times;</button>
+        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold px-2 cursor-pointer">&times;</button>
       </div>
 
       <div class="grid grid-cols-1 gap-3">
-        <!-- Civic Blue -->
+        <!-- Palette 1: Civic Blue -->
         <div onclick="setTheme('blue')" id="theme-card-blue" class="flex items-center justify-between p-3.5 rounded-xl border-2 border-slate-200 hover:border-blue-500 cursor-pointer transition">
           <div class="flex items-center space-x-3">
             <div class="flex -space-x-1">
@@ -93,13 +102,13 @@
             </div>
             <div>
               <p class="text-xs font-bold text-slate-800">Civic Blue (Original)</p>
-              <p class="text-[11px] text-slate-400">Classic municipal authority palette</p>
+              <p class="text-[11px] text-slate-400">Official municipal operations palette</p>
             </div>
           </div>
           <span id="check-blue" class="text-xs font-bold text-blue-600">✓ Active</span>
         </div>
 
-        <!-- Coffee & Vanilla -->
+        <!-- Palette 2: Coffee & Vanilla -->
         <div onclick="setTheme('coffee')" id="theme-card-coffee" class="flex items-center justify-between p-3.5 rounded-xl border-2 border-slate-200 hover:border-[#8A5A36] cursor-pointer transition">
           <div class="flex items-center space-x-3">
             <div class="flex -space-x-1">
@@ -109,7 +118,7 @@
             </div>
             <div>
               <p class="text-xs font-bold text-slate-800">Coffee & Vanilla</p>
-              <p class="text-[11px] text-slate-400">Rich espresso & warm cream</p>
+              <p class="text-[11px] text-slate-400">Warm espresso & soft cream background</p>
             </div>
           </div>
           <span id="check-coffee" class="hidden text-xs font-bold text-[#8A5A36]">✓ Active</span>
@@ -117,7 +126,7 @@
       </div>
 
       <div class="mt-5 pt-3 border-t border-slate-100 flex justify-end">
-        <button onclick="closeSettingsModal()" class="theme-accent-btn text-xs font-semibold px-4 py-2 rounded-xl transition">Done</button>
+        <button onclick="closeSettingsModal()" class="theme-accent-btn text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer">Done</button>
       </div>
     </div>
   </div>
@@ -127,13 +136,13 @@
     <div id="authModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
       
       <div class="flex border-b border-slate-200 mb-5">
-        <button id="tabLoginBtn" onclick="switchAuthTab('login')" class="flex-1 py-2.5 text-xs font-bold border-b-2 border-blue-600 text-blue-600">
+        <button id="tabLoginBtn" onclick="switchAuthTab('login')" class="flex-1 py-2.5 text-xs font-bold border-b-2 border-blue-600 text-blue-600 cursor-pointer">
           Sign In
         </button>
-        <button id="tabRegisterBtn" onclick="switchAuthTab('register')" class="flex-1 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600">
+        <button id="tabRegisterBtn" onclick="switchAuthTab('register')" class="flex-1 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer">
           Create Account
         </button>
-        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-700 text-lg px-2">&times;</button>
+        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-700 text-lg px-2 cursor-pointer">&times;</button>
       </div>
 
       <!-- Sign In Form -->
@@ -166,11 +175,11 @@
       <form id="registerForm" class="hidden space-y-3" onsubmit="handleRegister(event)">
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Full Name</label>
-          <input type="text" id="regName" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g. John Doe" />
+          <input type="text" id="regName" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g. Ahmad Razak" />
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
-          <input type="email" id="regEmail" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="user@gmail.com" />
+          <input type="email" id="regEmail" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="ahmad@gmail.com" />
         </div>
         
         <div>
@@ -190,7 +199,7 @@
           <label class="block text-xs font-semibold text-slate-700 mb-1">Role</label>
           <select id="regRole" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none cursor-pointer">
             <option value="citizen">Public Citizen</option>
-            <option value="admin">Municipal Authority</option>
+            <option value="admin">Municipal Authority (DBKL / Council)</option>
           </select>
         </div>
         <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-xs cursor-pointer active:scale-95 transition shadow-sm">
@@ -202,43 +211,123 @@
     </div>
   </div>
 
-  <!-- MAIN CONTAINER (PAGE VIEWS SWITCH EXCLUSIVELY) -->
+  <!-- AI INSPECTION RESULT MODAL (POST-SUBMISSION POPUP) -->
+  <div id="aiResultModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div id="aiResultCard" class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 modal-enter">
+      <div class="flex justify-between items-start border-b border-slate-100 pb-3 mb-4">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+            Real-Time Vision Verification
+          </span>
+          <h3 class="text-base font-bold text-slate-900 mt-1" id="aiResultModalTitle">Incident Processed</h3>
+        </div>
+        <button onclick="closeAiResultModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <!-- Annotated Photo Container -->
+      <div class="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-950 mb-4 h-48 flex items-center justify-center">
+        <img id="aiResultImage" src="" alt="AI Annotated Evidence" class="w-full h-full object-contain" />
+        <span id="aiResultBadge" class="absolute top-2 right-2 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm"></span>
+      </div>
+
+      <!-- Triage Details Grid -->
+      <div class="space-y-2 text-xs bg-slate-50 p-3.5 rounded-xl border border-slate-200 mb-4">
+        <div class="flex justify-between">
+          <span class="text-slate-500">Ticket Reference:</span>
+          <span class="font-mono font-bold text-slate-900" id="aiResultTicketId">REP-XXXXXX</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Hazard Classification:</span>
+          <span class="font-semibold text-slate-800" id="aiResultCategory">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Deduplication Status:</span>
+          <span class="font-semibold" id="aiResultDedupStatus">-</span>
+        </div>
+      </div>
+
+      <div class="flex space-x-2">
+        <button onclick="closeAiResultModal()" class="flex-1 theme-accent-btn font-semibold py-2 rounded-xl text-xs transition cursor-pointer">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTRACTOR PROOF-OF-RESOLUTION MODAL (ADMIN ONLY) -->
+  <div id="resolveModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div id="resolveModalCard" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 modal-enter">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Close Work Order</h3>
+          <p class="text-xs text-slate-500">Upload contractor proof photo to resolve ticket.</p>
+        </div>
+        <button onclick="closeResolveModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <form id="resolveForm" onsubmit="handleResolveSubmit(event)" class="space-y-4">
+        <input type="hidden" id="resolveTicketId" />
+
+        <div class="bg-slate-50 p-3 rounded-xl border text-xs">
+          <span class="text-slate-500">Closing Ticket:</span>
+          <span class="font-mono font-bold text-slate-900 ml-1" id="resolveTicketDisplay">REP-XXXXXX</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Contractor "After Repair" Photograph</label>
+          <input type="file" id="resolveImageInput" accept="image/*" required class="w-full text-xs p-2 bg-slate-50 border rounded-lg file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-blue-600 file:text-white cursor-pointer" />
+        </div>
+
+        <button type="submit" id="resolveSubmitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-sm cursor-pointer">
+          Verify Resolution & Close Ticket
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       3. MAIN SINGLE-PAGE APPLICATION (SPA) CONTENT CONTAINER
+       ========================================================================= -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 relative">
 
-    <!-- VIEW 1: REPORT & MAP -->
+    <!-- VIEW 1: CITIZEN REPORTING PANEL & LIVE SPATIAL MAP -->
     <div id="view-report" class="grid grid-cols-1 lg:grid-cols-12 gap-6 view-transition">
       
-      <!-- Reporting Sidebar -->
+      <!-- Left Column: Ingestion Panel -->
       <div class="theme-card lg:col-span-4 p-5 rounded-2xl shadow-sm border">
         <h2 class="text-base font-bold mb-1">Report Public Hazard</h2>
         <p class="theme-text-muted text-xs mb-4">Multi-hazard AI verification with 20m spatial deduplication.</p>
 
         <form id="incidentForm" class="space-y-4">
           
+          <!-- Field 1: Category Selector -->
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider mb-1">Hazard Category</label>
-            <select id="categoryInput" class="theme-input w-full text-xs p-2.5 border rounded-lg font-medium cursor-pointer">
-              <option value="Road Surface (Pothole / Sinkhole / Crack)">🕳️ Road Surface (Pothole / Sinkhole / Crack)</option>
-              <option value="Fallen Tree / Hanging Branch Obstruction">🌳 Fallen Tree / Hanging Branch Obstruction</option>
-              <option value="Open Manhole / Missing Drain Grate">⚠️ Open Manhole / Missing Drain Grate</option>
-              <option value="Traffic Light / Street Light Outage">🚦 Traffic Light / Street Light Outage</option>
-              <option value="Illegal Waste Dumping / Blocked Drainage">🗑️ Illegal Waste Dumping / Blocked Drainage</option>
-            </select>
-          </div>
+              <label class="block text-xs font-semibold uppercase tracking-wider mb-1">Hazard Classification</label>
+              <select id="categoryInput" class="theme-input w-full text-xs p-2.5 border rounded-lg font-medium cursor-pointer">
+                <option value="Auto-Detect" selected>✨ Auto-Detect with AI (Recommended)</option>
+                <option value="Road Surface (Pothole / Sinkhole / Crack)">🕳️ Road Surface (Pothole / Sinkhole / Crack)</option>
+                <option value="Fallen Tree / Hanging Branch Obstruction">🌳 Fallen Tree / Hanging Branch Obstruction</option>
+                <option value="Open Manhole / Missing Drain Grate">⚠️ Open Manhole / Missing Drain Grate</option>
+                <option value="Traffic Light / Street Light Outage">🚦 Traffic Light / Street Light Outage</option>
+                <option value="Illegal Waste Dumping / Blocked Drainage">🗑️ Illegal Waste Dumping / Blocked Drainage</option>
+              </select>
+            </div>
 
-          <!-- GPS Telemetry with Address Display -->
+          <!-- Field 2: Telemetry & Address Geocoding -->
           <div>
             <div class="flex justify-between items-center mb-1">
               <label class="block text-xs font-semibold uppercase tracking-wider">GPS Telemetry</label>
               <span class="text-[10px] text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Auto-Locked</span>
             </div>
-            <button type="button" onclick="detectUserLocation()" class="theme-soft-badge w-full mb-2 border py-2 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 cursor-pointer">
+            
+            <button type="button" onclick="detectUserLocation()" class="theme-soft-badge w-full mb-2 border py-2 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95 transition">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
               <span>Calibrate Current GPS</span>
             </button>
+
             <div class="grid grid-cols-2 gap-2">
-              <input type="number" step="any" id="latInput" placeholder="Latitude" readonly required class="theme-input w-full text-xs p-2.5 border rounded-lg bg-slate-50 font-mono text-slate-500" />
-              <input type="number" step="any" id="lngInput" placeholder="Longitude" readonly required class="theme-input w-full text-xs p-2.5 border rounded-lg bg-slate-50 font-mono text-slate-500" />
+              <input type="number" step="any" id="latInput" placeholder="Latitude" readonly required class="theme-input w-full text-xs p-2.5 border rounded-lg bg-slate-50 font-mono text-slate-500 cursor-not-allowed" />
+              <input type="number" step="any" id="lngInput" placeholder="Longitude" readonly required class="theme-input w-full text-xs p-2.5 border rounded-lg bg-slate-50 font-mono text-slate-500 cursor-not-allowed" />
             </div>
             
             <p id="addressDisplay" class="text-[11px] text-blue-600 font-medium mt-1.5 truncate">
@@ -246,7 +335,7 @@
             </p>
           </div>
 
-          <!-- Photograph Container -->
+          <!-- Field 3: Image Drag-and-Drop Zone -->
           <div>
             <label class="block text-xs font-semibold uppercase tracking-wider mb-1">Incident Photograph</label>
             <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleNativeFileChange(this)" />
@@ -256,6 +345,7 @@
               onclick="handleDropZoneClick(event)"
               class="relative border-2 border-dashed border-slate-300 rounded-2xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center min-h-[145px] bg-slate-50 hover:bg-slate-100"
             >
+              <!-- State A: Signed Out Guard -->
               <div id="guestLockPrompt" class="flex flex-col items-center py-2">
                 <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mb-2 shadow-xs">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -269,6 +359,7 @@
                 </span>
               </div>
 
+              <!-- State B: Signed In Ready -->
               <div id="dropPrompt" class="hidden flex-col items-center py-2">
                 <div class="w-12 h-12 rounded-full bg-blue-100/70 text-blue-600 flex items-center justify-center mb-2 shadow-xs">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -280,6 +371,7 @@
                 <p class="text-[11px] text-slate-400 mt-0.5">JPG, PNG, or WEBP up to 10MB</p>
               </div>
 
+              <!-- State C: Thumbnail Staged -->
               <div id="imagePreviewContainer" class="hidden w-full h-36 relative rounded-xl overflow-hidden border border-slate-200">
                 <img id="imagePreview" src="" alt="Incident Preview" class="w-full h-full object-cover" />
                 <div class="absolute bottom-2 inset-x-2 flex justify-between items-center px-1">
@@ -294,13 +386,21 @@
             </div>
           </div>
 
-          <!-- Remarks (Clean Standard Text Input) -->
+          <!-- Field 4: Remarks with Web Speech Voice Dictation -->
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider mb-1">Remarks</label>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-xs font-semibold uppercase tracking-wider">Remarks</label>
+              <!-- Voice Recognition Trigger -->
+              <button type="button" id="micBtn" onclick="toggleVoiceRecognition()" class="text-[11px] text-slate-500 hover:text-blue-600 flex items-center space-x-1 cursor-pointer">
+                <span>🎤</span>
+                <span id="micLabel">Voice Dictate</span>
+              </button>
+            </div>
             <textarea id="notesInput" rows="2" placeholder="e.g., Deep pothole along left lane after rain" class="theme-input w-full text-xs p-2.5 border rounded-lg"></textarea>
           </div>
 
-          <button type="submit" id="submitBtn" class="theme-accent-btn w-full font-semibold py-2.5 rounded-xl text-xs shadow-sm cursor-pointer">
+          <!-- Submit Button -->
+          <button type="submit" id="submitBtn" class="theme-accent-btn w-full font-semibold py-2.5 rounded-xl text-xs shadow-sm cursor-pointer active:scale-95 transition">
             Submit for AI Verification
           </button>
         </form>
@@ -308,18 +408,20 @@
         <div id="feedbackBanner" class="hidden mt-4 p-3 rounded-xl text-xs font-medium border"></div>
       </div>
 
-      <!-- Live Map Container with Heatmap Toggle -->
+      <!-- Right Column: Interactive Leaflet GIS Canvas -->
       <div class="theme-card lg:col-span-8 p-2 rounded-2xl shadow-sm border relative min-h-[460px] flex flex-col">
         <div class="flex flex-wrap justify-between items-center px-3 py-2 border-b gap-2">
           <div class="flex items-center space-x-2">
             <span class="font-bold text-xs uppercase tracking-wider">Live Spatial Map</span>
             <span id="mapReportCountBadge" class="theme-soft-badge text-[10px] font-semibold px-2 py-0.5 rounded-full border">0 Reports</span>
             
+            <!-- Heatmap Density Toggle -->
             <button type="button" id="btnToggleHeatmap" onclick="toggleHeatmapView()" class="text-[10px] font-bold px-2 py-0.5 rounded border bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer ml-1">
               🔥 Heatmap Off
             </button>
           </div>
 
+          <!-- Severity Marker Legend -->
           <div class="theme-text-muted flex items-center space-x-3 text-[11px]">
             <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-rose-500 mr-1.5"></span>Critical</span>
             <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>Medium</span>
@@ -327,12 +429,13 @@
           </div>
         </div>
 
+        <!-- The Map Container -->
         <div id="map" class="w-full flex-1 rounded-xl z-0" style="min-height: 440px;"></div>
       </div>
 
     </div>
 
-    <!-- VIEW 2: CITIZEN MY REPORTS -->
+    <!-- VIEW 2: CITIZEN MY REPORTS HISTORY -->
     <div id="view-myreports" class="theme-card hidden max-w-4xl mx-auto p-6 rounded-2xl shadow-sm border view-transition">
       <div class="flex justify-between items-center mb-4 pb-3 border-b">
         <div>
@@ -344,7 +447,7 @@
       <div id="myReportsList" class="space-y-3"></div>
     </div>
 
-    <!-- VIEW 3: TRACK TICKET -->
+    <!-- VIEW 3: PUBLIC TICKET PROGRESS TRACKER -->
     <div id="view-track" class="theme-card hidden max-w-xl mx-auto p-6 rounded-2xl shadow-sm border view-transition">
       <div class="text-center mb-6">
         <h2 class="text-base font-bold">Track Hazard Milestone</h2>
@@ -352,13 +455,15 @@
       </div>
       <div class="flex space-x-2 mb-6">
         <input type="text" id="trackInput" placeholder="Enter Ticket Code (e.g. REP-8F12B0)" class="theme-input flex-1 text-xs p-3 border rounded-xl uppercase font-mono" />
-        <button onclick="trackTicket()" class="theme-accent-btn font-semibold px-5 rounded-xl text-xs cursor-pointer">Track</button>
+        <button onclick="trackTicket()" class="theme-accent-btn font-semibold px-5 rounded-xl text-xs cursor-pointer active:scale-95 transition">Track</button>
       </div>
       <div id="trackResult" class="hidden space-y-4 pt-4 border-t"></div>
     </div>
 
-    <!-- VIEW 4: COUNCIL OPS -->
+    <!-- VIEW 4: COUNCIL OPERATIONS COMMAND DASHBOARD -->
     <div id="view-admin" class="hidden space-y-6 view-transition">
+      
+      <!-- Top Smart-City KPI Metric Cards -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="theme-card p-4 rounded-xl border shadow-sm">
           <p class="theme-text-muted text-[11px] font-semibold uppercase tracking-wider">Total Open Tickets</p>
@@ -369,7 +474,7 @@
           <p id="kpiCritical" class="text-2xl font-black text-rose-600 mt-1">0</p>
         </div>
         <div class="theme-card p-4 rounded-xl border shadow-sm">
-          <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-500">Total Upvotes</p>
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-500">Duplicates Intercepted</p>
           <p id="kpiDuplicates" class="text-2xl font-black text-blue-600 mt-1">0</p>
         </div>
         <div class="theme-card p-4 rounded-xl border shadow-sm">
@@ -378,14 +483,27 @@
         </div>
       </div>
 
+      <!-- Triage & Dispatch Work-Order Queue -->
       <div class="theme-card rounded-2xl shadow-sm border overflow-hidden">
-        <div class="p-4 border-b flex justify-between items-center">
+        <div class="p-4 border-b flex flex-wrap justify-between items-center gap-3">
           <div>
             <h3 class="text-sm font-bold">Contractor Dispatch Operations</h3>
             <p class="theme-text-muted text-xs">Verify resolutions and manage work orders.</p>
           </div>
-          <button onclick="loadAdminReports()" class="theme-soft-badge border text-xs px-3 py-1.5 rounded-lg font-medium cursor-pointer">Refresh</button>
+
+          <!-- Table Search & Filter Bar -->
+          <div class="flex flex-wrap items-center gap-2">
+            <input type="text" id="adminSearchInput" oninput="filterAdminTable()" placeholder="Search Ticket / Category..." class="theme-input text-xs px-2.5 py-1.5 border rounded-lg w-44" />
+            <select id="adminFilterSeverity" onchange="filterAdminTable()" class="theme-input text-xs px-2 py-1.5 border rounded-lg cursor-pointer">
+              <option value="ALL">All Severities</option>
+              <option value="Critical">Critical</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+            <button onclick="loadAdminReports()" class="theme-soft-badge border text-xs px-3 py-1.5 rounded-lg font-medium cursor-pointer">Refresh</button>
+          </div>
         </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead class="border-b uppercase font-semibold">
@@ -407,8 +525,113 @@
 
   </main>
 
-  <!-- JAVASCRIPT ENGINE (CLEAN SINGLE INSTANCE) -->
+
+  <!-- =========================================================================
+       ENTERPRISE MUNICIPAL & ACADEMIC FOOTER
+       ========================================================================= -->
+  <footer class="theme-header text-white mt-auto border-t border-slate-800 transition-colors duration-300">
+    <div class="max-w-7xl mx-auto px-4 md:px-6 py-10">
+      
+      <!-- 4-Column Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 text-xs">
+        
+        <!-- Column 1: Identity & Scope -->
+        <div class="space-y-3">
+          <div class="flex items-center space-x-2.5">
+            <div class="theme-logo w-7 h-7 rounded-lg flex items-center justify-center font-black text-white text-sm shadow-xs">
+              CW
+            </div>
+            <span class="font-bold text-base tracking-tight text-white">CityWatch AI</span>
+          </div>
+          <p class="text-slate-400 leading-relaxed text-[11px]">
+            An intelligent crowdsourced hazard triage and spatial deduplication system designed to automate municipal road defect verification and accelerate maintenance dispatch cycles across Malaysian urban corridors.
+          </p>
+          <div class="flex items-center space-x-2 text-[10px] text-slate-500">
+            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">PWA Ready</span>
+            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">FastAPI REST</span>
+            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Leaflet GIS</span>
+          </div>
+        </div>
+
+        <!-- Column 2: System Architecture -->
+        <div class="space-y-2.5">
+          <h4 class="font-bold uppercase tracking-wider text-slate-200 text-[11px]">Core Architecture</h4>
+          <ul class="space-y-1.5 text-slate-400 text-[11px]">
+            <li class="flex items-center space-x-1.5">
+              <span class="text-blue-400">▹</span>
+              <span>YOLOv8 Computer Vision Pipeline</span>
+            </li>
+            <li class="flex items-center space-x-1.5">
+              <span class="text-blue-400">▹</span>
+              <span>20-Meter Proximity Clustering Engine</span>
+            </li>
+            <li class="flex items-center space-x-1.5">
+              <span class="text-blue-400">▹</span>
+              <span>OpenStreetMap & Nominatim Geocoding</span>
+            </li>
+            <li class="flex items-center space-x-1.5">
+              <span class="text-blue-400">▹</span>
+              <span>Council Operations Triage Matrix</span>
+            </li>
+            <li class="flex items-center space-x-1.5">
+              <span class="text-blue-400">▹</span>
+              <span>Non-Civic False-Positive Image Filter</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Column 3: Emergency Hotlines & Protocol -->
+        <div class="space-y-2.5">
+          <h4 class="font-bold uppercase tracking-wider text-slate-200 text-[11px]">Municipal Dispatch Hotlines</h4>
+          <p class="text-slate-400 text-[11px]">
+            For life-threatening cave-ins or active structural road collapses, contact emergency services immediately:
+          </p>
+          <div class="space-y-1 text-[11px] font-mono text-slate-300">
+            <p>🚨 <b>Emergency Services:</b> <span class="text-rose-400 font-bold">999</span></p>
+            <p>🏛️ <b>DBKL Call Centre:</b> 1-800-88-3255</p>
+            <p>🚧 <b>JKR Aduan Jalan:</b> 03-2610 7727</p>
+            <p>⚡ <b>TNB Electrical Breakdown:</b> 15454</p>
+          </div>
+        </div>
+
+        <!-- Column 4: Academic Attribution -->
+        <div class="space-y-2.5">
+          <h4 class="font-bold uppercase tracking-wider text-slate-200 text-[11px]">Project Attribution</h4>
+          <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-1 text-[11px]">
+            <p class="text-slate-200"><b>Developer:</b> Muhammad Affandi</p>
+            <p class="text-slate-400"><b>Course:</b> Diploma in Computer Science</p>
+            <p class="text-slate-400"><b>Faculty:</b> Faculty of Computing & Multimedia (FCOM)</p>
+            <p class="text-slate-400"><b>Institution:</b> Universiti Poly-Tech Malaysia (UPTM)</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Divider & Copyright Strip -->
+      <div class="pt-6 border-t border-slate-800/80 flex flex-wrap justify-between items-center gap-3 text-[11px] text-slate-400">
+        <div>
+          &copy; 2026 <b>CityWatch AI</b>. Universiti Poly-Tech Malaysia (UPTM). Developed for Academic Evaluation.
+        </div>
+        <div class="flex items-center space-x-4">
+          <span class="flex items-center space-x-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            <span>All Systems Operational</span>
+          </span>
+          <span>•</span>
+          <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="hover:text-white transition cursor-pointer">
+            Back to Top ↑
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- =========================================================================
+       4. JAVASCRIPT LOGIC ENGINE
+       ========================================================================= -->
   <script>
+    // State management
     let currentUser = null;
     let currentTheme = 'blue';
     let map, splitMapMarker, activeReports = [];
@@ -416,6 +639,7 @@
     let heatLayer = null;
     let isHeatmapActive = false;
 
+    // DOM bindings
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('imageInput');
     const previewContainer = document.getElementById('imagePreviewContainer');
@@ -427,7 +651,9 @@
       return currentUser !== null && currentUser.email;
     }
 
-    // 1. Password Visibility Toggle
+    // -------------------------------------------------------------------------
+    // 1. Password Visibility Eye Toggle
+    // -------------------------------------------------------------------------
     function togglePasswordVisibility(inputId, iconId) {
       const input = document.getElementById(inputId);
       const icon = document.getElementById(iconId);
@@ -446,7 +672,9 @@
       }
     }
 
-    // 2. Theme Controller
+    // -------------------------------------------------------------------------
+    // 2. 2-Theme Controller (Civic Blue & Coffee)
+    // -------------------------------------------------------------------------
     function setTheme(themeName) {
       currentTheme = themeName;
       document.body.setAttribute('data-theme', themeName);
@@ -479,7 +707,62 @@
       document.getElementById('settingsModal').classList.add('hidden');
     }
 
-    // 3. Incident Photograph Preview Engine
+    // -------------------------------------------------------------------------
+    // 3. Web Speech API (Voice Dictation for Remarks)
+    // -------------------------------------------------------------------------
+    let recognitionInstance = null;
+    let isRecordingVoice = false;
+
+    function toggleVoiceRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+        return;
+      }
+
+      const micLabel = document.getElementById('micLabel');
+      const notesInput = document.getElementById('notesInput');
+
+      if (!isRecordingVoice) {
+        recognitionInstance = new SpeechRecognition();
+        recognitionInstance.lang = 'en-US'; // or 'ms-MY' for Bahasa Melayu
+        recognitionInstance.interimResults = false;
+
+        recognitionInstance.onstart = () => {
+          isRecordingVoice = true;
+          micLabel.textContent = "Listening...";
+          micLabel.classList.add('text-rose-600', 'font-bold');
+        };
+
+        recognitionInstance.onresult = (event) => {
+          const spokenText = event.results[0][0].transcript;
+          notesInput.value = (notesInput.value ? notesInput.value + " " : "") + spokenText;
+        };
+
+        recognitionInstance.onerror = () => {
+          isRecordingVoice = false;
+          micLabel.textContent = "Voice Dictate";
+          micLabel.classList.remove('text-rose-600', 'font-bold');
+        };
+
+        recognitionInstance.onend = () => {
+          isRecordingVoice = false;
+          micLabel.textContent = "Voice Dictate";
+          micLabel.classList.remove('text-rose-600', 'font-bold');
+        };
+
+        recognitionInstance.start();
+      } else {
+        if (recognitionInstance) recognitionInstance.stop();
+        isRecordingVoice = false;
+        micLabel.textContent = "Voice Dictate";
+        micLabel.classList.remove('text-rose-600', 'font-bold');
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. Staged Image Preview Engine
+    // -------------------------------------------------------------------------
     function updateUploadUI() {
       const signedIn = isUserSignedIn();
       const hasPreview = !previewContainer.classList.contains('hidden');
@@ -520,7 +803,6 @@
 
     function processAndPreviewFile(file) {
       if (!file) return;
-
       const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'];
       const fileExt = file.name.split('.').pop().toLowerCase();
       const isMimeImage = file.type && file.type.startsWith('image/');
@@ -596,7 +878,9 @@
       }
     });
 
-    // 4. Map & Reverse Geocoding
+    // -------------------------------------------------------------------------
+    // 5. Leaflet Map & Reverse Geocoding
+    // -------------------------------------------------------------------------
     function initMap() {
       map = L.map('map').setView([3.1390, 101.6869], 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -629,7 +913,8 @@
             const lng = pos.coords.longitude.toFixed(6);
             document.getElementById('latInput').value = lat;
             document.getElementById('lngInput').value = lng;
-            map.setView([lat, lng], 15);
+            // Smooth street-level flyTo animation
+            map.flyTo([lat, lng], 16, { animate: true, duration: 1.2 });
             placeTempPin(lat, lng);
             fetchStreetAddress(lat, lng);
           },
@@ -656,27 +941,64 @@
 
       if (isHeatmapActive) {
         btn.textContent = "🔥 Heatmap On";
-        btn.className = "text-[10px] font-bold px-2 py-0.5 rounded border bg-rose-600 text-white transition cursor-pointer ml-1";
+        btn.className = "text-[10px] font-bold px-2 py-0.5 rounded border bg-rose-600 text-white shadow-sm transition cursor-pointer ml-1";
+        
+        // Hide regular pins so the glow is unobstructed
         markersLayer.clearLayers();
 
-        const points = activeReports.map(r => [
-          r.latitude,
-          r.longitude,
-          r.severity === 'Critical' ? 1.0 : (r.severity === 'Medium' ? 0.6 : 0.3)
-        ]);
+        // 1. Parse coordinates into strict floats and assign high-intensity weights
+        const points = activeReports
+          .filter(r => r.latitude && r.longitude)
+          .map(r => {
+            const lat = parseFloat(r.latitude);
+            const lng = parseFloat(r.longitude);
+            // Critical hazards get maximum thermal heat (1.0), Medium gets 0.7, Resolved/Low gets 0.4
+            let intensity = 0.5;
+            if (r.severity === 'Critical') intensity = 1.0;
+            else if (r.severity === 'Medium') intensity = 0.7;
 
-        heatLayer = L.heatLayer(points, { radius: 28, blur: 18, maxZoom: 16 }).addTo(map);
+            return [lat, lng, intensity];
+          });
+
+        // 2. High-intensity glowing thermal configuration
+        const heatConfig = {
+          radius: 40,       // Large radius so points merge into wide glowing clusters
+          blur: 24,         // Soft diffuse blur for radiant outer glow
+          maxZoom: 15,
+          max: 1.0,
+          minOpacity: 0.65, // Force minimum 65% opacity so it pops off the map
+          gradient: {
+            0.15: '#00e5ff', // Neon Cyan outer halo
+            0.40: '#10b981', // Emerald / Neon Green
+            0.65: '#facc15', // Radiant Warning Yellow
+            0.85: '#f97316', // Hot Amber
+            1.00: '#ef4444'  // Core Red Hazard Hotspot
+          }
+        };
+
+        if (heatLayer) {
+          map.removeLayer(heatLayer);
+        }
+        
+        heatLayer = L.heatLayer(points, heatConfig).addTo(map);
+
       } else {
         btn.textContent = "🔥 Heatmap Off";
         btn.className = "text-[10px] font-bold px-2 py-0.5 rounded border bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer ml-1";
-        if (heatLayer) map.removeLayer(heatLayer);
+        
+        if (heatLayer) {
+          map.removeLayer(heatLayer);
+          heatLayer = null;
+        }
+
+        // Restore individual circle pins
         loadReports();
       }
     }
 
     async function handleUpvoteClick(reportId) {
       if (!isUserSignedIn()) {
-        alert("Action Blocked: You must be signed in to endorse or upvote reports. This prevents spam and prank votes.");
+        alert("Action Blocked: You must be signed in to endorse reports.");
         openAuthModal('login');
         return;
       }
@@ -696,6 +1018,9 @@
       }
     }
 
+    // -------------------------------------------------------------------------
+    // 6. Report Rendering on Map (with Before vs After Proof)
+    // -------------------------------------------------------------------------
     async function loadReports() {
       try {
         const emailParam = currentUser ? `?user_email=${encodeURIComponent(currentUser.email)}` : "";
@@ -710,7 +1035,7 @@
         markersLayer.clearLayers();
 
         activeReports.forEach(r => {
-          let markerColor = "#10b981";
+          let markerColor = "#10b981"; // Green for Resolved
           if (r.status !== "Resolved") {
             markerColor = r.severity === "Critical" ? "#ef4444" : "#f59e0b";
           }
@@ -719,6 +1044,7 @@
             radius: 8, fillColor: markerColor, color: "#ffffff", weight: 2, fillOpacity: 0.95
           });
 
+          // Upvote button logic
           let upvoteButtonHtml = '';
           if (r.status !== "Resolved") {
             if (r.has_upvoted) {
@@ -726,7 +1052,7 @@
                 <button onclick="handleUpvoteClick('${r.report_id}')" class="w-full mt-2.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-1.5 px-2 rounded-lg text-xs flex items-center justify-center space-x-1.5 shadow-sm transition active:scale-95 cursor-pointer">
                   <span>✓ You Endorsed This</span>
                   <span class="bg-black/15 text-slate-900 font-black px-1.5 py-0.5 rounded-full text-[10px]">${r.upvote_count || 0}</span>
-                  <span class="text-[9px] opacity-75">(Click to Cancel)</span>
+                  <span class="text-[9px] opacity-75">(Cancel)</span>
                 </button>
               `;
             } else {
@@ -745,20 +1071,26 @@
             `;
           }
 
-          let adminDeleteHtml = '';
-          if (currentUser && currentUser.role === 'admin') {
-            adminDeleteHtml = `
-              <div class="mt-2 pt-2 border-t border-slate-100 text-right">
-                <button onclick="confirmDeleteReport('${r.report_id}')" class="px-2 py-1 text-[10px] bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded font-semibold transition cursor-pointer">
-                  🗑️ Delete Ticket (Admin)
-                </button>
+          // Before vs After Photo Layout
+          let mediaSectionHtml = `<img src="${r.image_url}" class="w-full h-32 object-cover" />`;
+          if (r.status === "Resolved" && r.resolved_image_url) {
+            mediaSectionHtml = `
+              <div class="grid grid-cols-2 gap-1 bg-slate-900 p-1">
+                <div class="relative">
+                  <img src="${r.image_url}" class="w-full h-24 object-cover rounded" />
+                  <span class="absolute bottom-1 left-1 bg-black/75 text-[9px] text-white px-1 rounded">Before</span>
+                </div>
+                <div class="relative">
+                  <img src="${r.resolved_image_url}" class="w-full h-24 object-cover rounded" />
+                  <span class="absolute bottom-1 left-1 bg-emerald-600 text-[9px] text-white px-1 rounded">After (Fixed)</span>
+                </div>
               </div>
             `;
           }
 
           circle.bindPopup(`
             <div class="w-64 font-sans text-xs">
-              <img src="${r.image_url}" class="w-full h-32 object-cover" />
+              ${mediaSectionHtml}
               <div class="p-3 bg-white">
                 <div class="flex justify-between items-center mb-1">
                   <span class="font-bold text-slate-900">${r.report_id}</span>
@@ -773,7 +1105,6 @@
                   <span>Status: <b>${r.status}</b></span>
                   <span>Endorsements: <b>${r.upvote_count || 0}</b></span>
                 </div>
-                ${adminDeleteHtml}
               </div>
             </div>
           `);
@@ -786,7 +1117,9 @@
       }
     }
 
-    // 5. Incident Form Submission with Duplicate Detection Feedback
+    // -------------------------------------------------------------------------
+    // 7. Incident Form Submission with AI Result Modal
+    // -------------------------------------------------------------------------
     document.getElementById('incidentForm').addEventListener('submit', async function(e) {
       e.preventDefault();
 
@@ -809,7 +1142,6 @@
       }
 
       const submitBtn = document.getElementById('submitBtn');
-      const banner = document.getElementById('feedbackBanner');
       submitBtn.disabled = true;
       submitBtn.textContent = "AI Scanning Hazard...";
 
@@ -826,39 +1158,66 @@
         const res = await response.json();
         if (!response.ok) throw new Error(res.detail || "Submission failed.");
 
-        if (res.is_duplicate) {
-          banner.className = "mt-4 p-3.5 rounded-xl text-xs font-medium border bg-amber-50 text-amber-900 border-amber-300 block";
-          banner.innerHTML = `
-            <b class="text-sm">📍 Duplicate Detected & Merged!</b><br>
-            Tracked under existing ticket: <b>${res.target_parent_id}</b>.<br>
-            <span class="text-[11px] opacity-90">${res.message}</span><br>
-            <i>Your submission added an endorsement (+1). No redundant pin was created.</i>
-          `;
-        } else {
-          banner.className = "mt-4 p-3.5 rounded-xl text-xs font-medium border bg-emerald-50 text-emerald-800 border-emerald-200 block";
-          banner.innerHTML = `
-            <b class="text-sm">✓ Success! New Incident Logged</b><br>
-            Ticket: <b>${res.ticket.report_id}</b><br>
-            AI Assessment: <b>${res.ticket.hazard_type}</b> (${res.ticket.severity} Priority)<br>
-            Plotted on live map for contractor dispatch.
-          `;
+        // Populate AI Inspection Result Modal
+        const modalTitle = document.getElementById('aiResultModalTitle');
+        const modalImg = document.getElementById('aiResultImage');
+        const modalBadge = document.getElementById('aiResultBadge');
+        const modalTicket = document.getElementById('aiResultTicketId');
+        const modalCategory = document.getElementById('aiResultCategory');
+        const modalDedup = document.getElementById('aiResultDedupStatus');
+
+        modalTicket.textContent = res.ticket.report_id;
+        modalCategory.textContent = res.ticket.hazard_type;
+        modalImg.src = res.ticket.image_url;
+
+        // CHECK 1: Was it rejected as a non-civic object (cat, dog, selfie)?
+        if (res.ticket.status.startsWith("Rejected")) {
+          modalTitle.textContent = "⚠️ Report Rejected (Non-Civic Image)";
+          modalBadge.textContent = "Rejected / Spam";
+          modalBadge.className = "absolute top-2 right-2 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm bg-rose-600 text-white";
+          modalDedup.innerHTML = `<span class="text-rose-600 font-bold">${res.ticket.status}</span><br><span class="text-[11px] text-slate-500">No hazard bounding box was generated. This report will not be dispatched to contractors.</span>`;
+        }
+        // CHECK 2: Was it merged as a duplicate within 20m?
+        else if (res.is_duplicate) {
+          modalTitle.textContent = "📍 Merged with Existing Ticket";
+          modalBadge.textContent = "Duplicate Merged (20m)";
+          modalBadge.className = "absolute top-2 right-2 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm bg-amber-500 text-white";
+          modalDedup.innerHTML = `<span class="text-amber-600 font-bold">Merged into ${res.target_parent_id}</span> (+1 Endorsement Added)`;
+        }
+        // CHECK 3: Legitimate civic hazard verified
+        else {
+          modalTitle.textContent = "✓ Verified & Dispatched to Map";
+          modalBadge.textContent = `${res.ticket.severity} Priority`;
+          modalBadge.className = `absolute top-2 right-2 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm ${
+            res.ticket.severity === 'Critical' ? 'bg-rose-600 text-white' : 'bg-amber-500 text-white'
+          }`;
+          modalDedup.innerHTML = `<span class="text-emerald-600 font-bold">New Unique Ticket Logged</span>`;
         }
 
+        // Display Modal
+        document.getElementById('aiResultModal').classList.remove('hidden');
+
+        // Reset form
         document.getElementById('incidentForm').reset();
         document.getElementById('addressDisplay').textContent = "📍 Street address will appear after calibrating GPS";
         removeSelectedImage();
         updateUploadUI();
         loadReports();
       } catch (err) {
-        banner.className = "mt-4 p-3 rounded-xl text-xs font-medium border bg-rose-50 text-rose-700 border-rose-200 block";
-        banner.textContent = "Error: " + err.message;
+        alert("Submission Error: " + err.message);
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "Submit for AI Verification";
       }
     });
 
-    // 6. Clean Exclusive View Navigation
+    function closeAiResultModal() {
+      document.getElementById('aiResultModal').classList.add('hidden');
+    }
+
+    // -------------------------------------------------------------------------
+    // 8. Single-Page Navigation Switcher
+    // -------------------------------------------------------------------------
     function switchView(viewName) {
       if (viewName === 'admin' && (!currentUser || currentUser.role !== 'admin')) {
         alert("Restricted: Municipal Authority account required.");
@@ -903,7 +1262,9 @@
       }
     }
 
-    // 7. Authentication Handlers
+    // -------------------------------------------------------------------------
+    // 9. Authentication Handlers
+    // -------------------------------------------------------------------------
     function openAuthModal(tab = 'login') {
       document.getElementById('authModal').classList.remove('hidden');
       document.getElementById('authErrorBanner').classList.add('hidden');
@@ -1015,7 +1376,9 @@
       switchView('report');
     }
 
-    // 8. My Reports & Track Ticket
+    // -------------------------------------------------------------------------
+    // 10. My Reports & Milestone Tracker
+    // -------------------------------------------------------------------------
     async function loadMyReports() {
       if (!isUserSignedIn()) {
         document.getElementById('myReportsList').innerHTML = `<p class="theme-text-muted text-xs text-center py-6">Please sign in to view your submissions.</p>`;
@@ -1092,7 +1455,11 @@
       }
     }
 
-    // 9. Admin Operations
+    // -------------------------------------------------------------------------
+    // 11. Council Operations Command Dashboard
+    // -------------------------------------------------------------------------
+    let adminRawReports = [];
+
     async function loadAdminStats() {
       try {
         const res = await fetch('/api/v1/stats');
@@ -1110,38 +1477,58 @@
       try {
         const res = await fetch('/api/v1/reports');
         const json = await res.json();
-        const tbody = document.getElementById('adminTableBody');
-        tbody.innerHTML = "";
-
-        const reports = json.data || [];
-        reports.forEach(r => {
-          const tr = document.createElement('tr');
-          tr.className = "hover:bg-slate-50";
-          tr.innerHTML = `
-            <td class="py-3 px-4 font-mono font-bold">${r.report_id}</td>
-            <td class="theme-text-muted py-3 px-4 font-mono text-[11px]">${r.reported_by}</td>
-            <td class="py-3 px-4">${r.hazard_type}</td>
-            <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-              r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
-            }">${r.severity}</span></td>
-            <td class="py-3 px-4 font-semibold text-amber-600">👍 ${r.upvote_count || 0}</td>
-            <td class="py-3 px-4 font-semibold">${r.status}</td>
-            <td class="py-3 px-4 text-right space-x-2">
-              <select onchange="updateTicketStatus('${r.report_id}', this.value)" class="theme-input text-xs border rounded p-1 cursor-pointer">
-                <option value="" disabled selected>Update...</option>
-                <option value="AI Verified">AI Verified</option>
-                <option value="Dispatched">Dispatched</option>
-                <option value="Resolved">Resolved</option>
-              </select>
-              <button onclick="confirmDeleteReport('${r.report_id}')" class="px-2 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded font-semibold transition cursor-pointer" title="Delete Invalid / Prank Report">
-                🗑️️ Delete
-              </button>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
+        adminRawReports = json.data || [];
+        filterAdminTable();
       } catch (err) {
         console.error("Failed to load admin reports", err);
+      }
+    }
+
+    function filterAdminTable() {
+      const query = (document.getElementById('adminSearchInput').value || "").toLowerCase().trim();
+      const severityFilter = document.getElementById('adminFilterSeverity').value;
+      const tbody = document.getElementById('adminTableBody');
+      tbody.innerHTML = "";
+
+      const filtered = adminRawReports.filter(r => {
+        const matchQuery = !query || r.report_id.toLowerCase().includes(query) || r.hazard_type.toLowerCase().includes(query) || r.reported_by.toLowerCase().includes(query);
+        const matchSeverity = (severityFilter === "ALL" || r.severity === severityFilter);
+        return matchQuery && matchSeverity;
+      });
+
+      filtered.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50";
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-mono font-bold">${r.report_id}</td>
+          <td class="theme-text-muted py-3 px-4 font-mono text-[11px]">${r.reported_by}</td>
+          <td class="py-3 px-4">${r.hazard_type}</td>
+          <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+            r.severity === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+          }">${r.severity}</span></td>
+          <td class="py-3 px-4 font-semibold text-amber-600">👍 ${r.upvote_count || 0}</td>
+          <td class="py-3 px-4 font-semibold">${r.status}</td>
+          <td class="py-3 px-4 text-right space-x-1.5">
+            <select onchange="handleAdminStatusSelect('${r.report_id}', this.value)" class="theme-input text-xs border rounded p-1 cursor-pointer">
+              <option value="" disabled selected>Update...</option>
+              <option value="AI Verified">AI Verified</option>
+              <option value="Dispatched">Dispatched</option>
+              <option value="RESOLVE_MODAL">Resolve with Proof...</option>
+            </select>
+            <button onclick="confirmDeleteReport('${r.report_id}')" class="px-2 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded font-semibold transition cursor-pointer">
+              🗑 Delete
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function handleAdminStatusSelect(reportId, value) {
+      if (value === "RESOLVE_MODAL") {
+        openResolveModal(reportId);
+      } else {
+        updateTicketStatus(reportId, value);
       }
     }
 
@@ -1159,6 +1546,58 @@
       }
     }
 
+    // -------------------------------------------------------------------------
+    // 12. Resolution Modal Execution (Uploading Contractor Proof)
+    // -------------------------------------------------------------------------
+    function openResolveModal(reportId) {
+      document.getElementById('resolveTicketId').value = reportId;
+      document.getElementById('resolveTicketDisplay').textContent = reportId;
+      document.getElementById('resolveImageInput').value = "";
+      document.getElementById('resolveModal').classList.remove('hidden');
+    }
+
+    function closeResolveModal() {
+      document.getElementById('resolveModal').classList.add('hidden');
+    }
+
+    async function handleResolveSubmit(e) {
+      e.preventDefault();
+      const reportId = document.getElementById('resolveTicketId').value;
+      const fileInput = document.getElementById('resolveImageInput');
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert("Please select contractor proof photo.");
+        return;
+      }
+
+      const btn = document.getElementById('resolveSubmitBtn');
+      btn.disabled = true;
+      btn.textContent = "Committing Resolution...";
+
+      const formData = new FormData();
+      formData.append("after_image", fileInput.files[0]);
+
+      try {
+        const res = await fetch(`/api/v1/report/${encodeURIComponent(reportId)}/resolve?role=admin`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Resolution failed.");
+
+        alert(`Ticket ${reportId} successfully resolved and verified!`);
+        closeResolveModal();
+        await loadAdminReports();
+        await loadAdminStats();
+        await loadReports();
+      } catch (err) {
+        alert("Error: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Verify Resolution & Close Ticket";
+      }
+    }
+
     async function confirmDeleteReport(reportId) {
       if (!confirm(`Are you sure you want to permanently delete ticket ${reportId}? This action cannot be undone.`)) {
         return;
@@ -1168,24 +1607,21 @@
         const res = await fetch(`/api/v1/report/${encodeURIComponent(reportId)}?role=admin`, {
           method: 'DELETE'
         });
-
         const data = await res.json();
-        if (!res.ok) {
-          alert("Error: " + (data.detail || "Could not delete report"));
-          return;
-        }
+        if (!res.ok) throw new Error(data.detail || "Could not delete report");
 
-        alert(`Ticket ${reportId} has been deleted.`);
-        
+        alert(`Ticket ${reportId} permanently deleted.`);
         await loadAdminReports();
         await loadAdminStats();
         await loadReports();
       } catch (err) {
-        alert("Network error: " + err.message);
+        alert("Delete failed: " + err.message);
       }
     }
 
-    // 10. Startup Lifecycle
+    // -------------------------------------------------------------------------
+    // 13. Application Startup Lifecycle
+    // -------------------------------------------------------------------------
     window.onload = () => {
       initTheme();
       initMap();
